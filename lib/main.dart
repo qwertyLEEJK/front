@@ -1,4 +1,27 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_compass/flutter_compass.dart';
+import 'dart:math' as math;
+import 'dart:async';
+import 'package:get/get.dart';
+import 'components/bottom_Navbar.dart';
+import 'function/sensor_controller.dart';
+import 'function/Predict_api.dart';
+import 'function/Predict_request.dart';
+import 'function/Predict_response.dart';
+
+final List<Map<String, dynamic>> markerList = [
+  {"x": 200, "y": 830},     // 1
+  {"x": 1650, "y": 1120},   // 2
+  {"x": 1650, "y": 830},    // 3
+  {"x": 1650, "y": 600},    // 4
+  {"x": 2730, "y": 830},    // 5
+  {"x": 2730, "y": 480},    // 6
+  {"x": 3100, "y": 830},    // 7
+  {"x": 2915, "y": 200, "isArrow": true}, // 화살표 마커
+];
+
+const double imageOriginWidth = 3508;
+const double imageOriginHeight = 1422;
 
 void main() {
   runApp(const MyApp());
@@ -7,116 +30,150 @@ void main() {
 class MyApp extends StatelessWidget {
   const MyApp({super.key});
 
-  // This widget is the root of your application.
   @override
   Widget build(BuildContext context) {
-    return MaterialApp(
-      title: 'Flutter Demo',
-      theme: ThemeData(
-        // This is the theme of your application.
-        //
-        // TRY THIS: Try running your application with "flutter run". You'll see
-        // the application has a purple toolbar. Then, without quitting the app,
-        // try changing the seedColor in the colorScheme below to Colors.green
-        // and then invoke "hot reload" (save your changes or press the "hot
-        // reload" button in a Flutter-supported IDE, or press "r" if you used
-        // the command line to start the app).
-        //
-        // Notice that the counter didn't reset back to zero; the application
-        // state is not lost during the reload. To reset the state, use hot
-        // restart instead.
-        //
-        // This works for code too, not just values: Most code changes can be
-        // tested with just a hot reload.
-        colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
-      ),
-      home: const MyHomePage(title: 'Flutter Demo Home Page'),
+    return GetMaterialApp(
+      title: '캠퍼스 지도',
+      debugShowCheckedModeBanner: false,
+      theme: ThemeData(useMaterial3: true),
+      home: const CampusMapPage(),
     );
   }
 }
 
-class MyHomePage extends StatefulWidget {
-  const MyHomePage({super.key, required this.title});
-
-  // This widget is the home page of your application. It is stateful, meaning
-  // that it has a State object (defined below) that contains fields that affect
-  // how it looks.
-
-  // This class is the configuration for the state. It holds the values (in this
-  // case the title) provided by the parent (in this case the App widget) and
-  // used by the build method of the State. Fields in a Widget subclass are
-  // always marked "final".
-
-  final String title;
+class CampusMapPage extends StatefulWidget {
+  const CampusMapPage({super.key});
 
   @override
-  State<MyHomePage> createState() => _MyHomePageState();
+  State<CampusMapPage> createState() => _CampusMapPageState();
 }
 
-class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+class _CampusMapPageState extends State<CampusMapPage> {
+  double? _heading;
+  int? selectedPredictionIndex;
+  Timer? _timer;
 
-  void _incrementCounter() {
-    setState(() {
-      // This call to setState tells the Flutter framework that something has
-      // changed in this State, which causes it to rerun the build method below
-      // so that the display can reflect the updated values. If we changed
-      // _counter without calling setState(), then the build method would not be
-      // called again, and so nothing would appear to happen.
-      _counter++;
+  @override
+  void initState() {
+    super.initState();
+    Get.put(SensorController());
+
+    FlutterCompass.events?.listen((CompassEvent event) {
+      setState(() {
+        _heading = event.heading;
+      });
     });
+
+    fetchPredictionAndUpdateMarker();
+    _timer = Timer.periodic(const Duration(seconds: 2), (_) => fetchPredictionAndUpdateMarker());
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    super.dispose();
+  }
+
+  void fetchPredictionAndUpdateMarker() async {
+    final controller = Get.find<SensorController>();
+    final request = controller.getCurrentSensorValues();
+    final result = await PredictApi.fetchPrediction(request);
+
+    if (result != null) {
+      setState(() {
+        selectedPredictionIndex = result.num; // 1~7 범위
+      });
+    }
   }
 
   @override
   Widget build(BuildContext context) {
-    // This method is rerun every time setState is called, for instance as done
-    // by the _incrementCounter method above.
-    //
-    // The Flutter framework has been optimized to make rerunning build methods
-    // fast, so that you can just rebuild anything that needs updating rather
-    // than having to individually change instances of widgets.
     return Scaffold(
-      appBar: AppBar(
-        // TRY THIS: Try changing the color here to a specific color (to
-        // Colors.amber, perhaps?) and trigger a hot reload to see the AppBar
-        // change color while the other colors stay the same.
-        backgroundColor: Theme.of(context).colorScheme.inversePrimary,
-        // Here we take the value from the MyHomePage object that was created by
-        // the App.build method, and use it to set our appbar title.
-        title: Text(widget.title),
-      ),
-      body: Center(
-        // Center is a layout widget. It takes a single child and positions it
-        // in the middle of the parent.
-        child: Column(
-          // Column is also a layout widget. It takes a list of children and
-          // arranges them vertically. By default, it sizes itself to fit its
-          // children horizontally, and tries to be as tall as its parent.
-          //
-          // Column has various properties to control how it sizes itself and
-          // how it positions its children. Here we use mainAxisAlignment to
-          // center the children vertically; the main axis here is the vertical
-          // axis because Columns are vertical (the cross axis would be
-          // horizontal).
-          //
-          // TRY THIS: Invoke "debug painting" (choose the "Toggle Debug Paint"
-          // action in the IDE, or press "p" in the console), to see the
-          // wireframe for each widget.
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: <Widget>[
-            const Text('You have pushed the button this many times:'),
-            Text(
-              '$_counter',
-              style: Theme.of(context).textTheme.headlineMedium,
-            ),
-          ],
+      appBar: AppBar(title: const Text('캠퍼스 지도')),
+      body: SafeArea(
+        child: LayoutBuilder(
+          builder: (context, constraints) {
+            final displayHeight = constraints.maxHeight;
+            final displayWidth = imageOriginWidth * (displayHeight / imageOriginHeight);
+
+            return InteractiveViewer(
+              panEnabled: true,
+              minScale: 1,
+              maxScale: 5,
+              child: SingleChildScrollView(
+                scrollDirection: Axis.horizontal,
+                child: ConstrainedBox(
+                  constraints: BoxConstraints(
+                    minHeight: displayHeight,
+                    minWidth: displayWidth,
+                  ),
+                  child: Stack(
+                    children: [
+                      Image.asset(
+                        'lib/3map.png',
+                        fit: BoxFit.fitHeight,
+                        height: displayHeight,
+                        width: displayWidth,
+                      ),
+                      ...markerList.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final marker = entry.value;
+                        final markerNumber = i + 1;
+                        double scaledLeft = (marker['x']! / imageOriginWidth) * displayWidth;
+                        double scaledTop = (marker['y']! / imageOriginHeight) * displayHeight;
+
+                        if (marker['isArrow'] == true) {
+                          return Positioned(
+                            left: scaledLeft - 16,
+                            top: scaledTop - 32,
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Transform.rotate(
+
+
+                                  angle: (((_heading ?? 0) - 18 + 180) * (math.pi / 180) * -1),
+                                  child: const Icon(Icons.navigation, size: 32, color: Colors.blue),
+                                ),
+                                const SizedBox(height: 4),
+                                Text("(${marker['x']}, ${marker['y']})", style: const TextStyle(fontSize: 11)),
+                              ],
+                            ),
+                          );
+                        }
+
+                        return Positioned(
+                          left: scaledLeft - 8,
+                          top: scaledTop - 8,
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Container(
+                                width: 16,
+                                height: 16,
+                                decoration: BoxDecoration(
+                                  color: selectedPredictionIndex == markerNumber ? Colors.blue : Colors.red,
+                                  shape: BoxShape.circle,
+                                  border: Border.all(color: Colors.white, width: 2),
+                                ),
+                              ),
+                              const SizedBox(height: 2),
+                              Text("($markerNumber)", style: const TextStyle(fontSize: 10)),
+                            ],
+                          ),
+                        );
+                      })
+                    ],
+                  ),
+                ),
+              ),
+            );
+          },
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: _incrementCounter,
-        tooltip: 'Increment',
-        child: const Icon(Icons.add),
-      ), // This trailing comma makes auto-formatting nicer for build methods.
+      bottomNavigationBar: SafeArea(
+        child: BottomNavBar(navigating: false, onStopNavigation: () {}),
+      ),
     );
   }
 }
