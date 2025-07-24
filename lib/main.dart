@@ -33,7 +33,7 @@ class MyApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetMaterialApp(
-      title: '캠퍼스 지도',
+      title: 'magnavi',
       debugShowCheckedModeBanner: false,
       theme: ThemeData(useMaterial3: true),
       home: const CampusMapPage(),

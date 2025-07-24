@@ -14,33 +14,33 @@ class BottomNavBar extends StatelessWidget {
     required this.onStopNavigation,
   });
 
-  void _goToMain(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const CampusMapScreen()),
-    );
-  }
-
-  void _goToBusInfo(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const BusInfoScreen()),
-    );
-  }
-
-  void _goLoginInfo(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const LoginScreen()),
-    );
-  }
-
-  void _goToDepartureSearch(BuildContext context) {
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (_) => const DepartureSearchScreen()),
-    );
-  }
+  // void _goToMain(BuildContext context) {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(builder: (_) => const CampusMapScreen()),
+  //   );
+  // }
+  //
+  // void _goToBusInfo(BuildContext context) {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(builder: (_) => const BusInfoScreen()),
+  //   );
+  // }
+  //
+  // void _goLoginInfo(BuildContext context) {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(builder: (_) => const LoginScreen()),
+  //   );
+  // }
+  //
+  // void _goToDepartureSearch(BuildContext context) {
+  //   Navigator.push(
+  //     context,
+  //     MaterialPageRoute(builder: (_) => const DepartureSearchScreen()),
+  //   );
+  // }
 
   @override
   Widget build(BuildContext context) {
