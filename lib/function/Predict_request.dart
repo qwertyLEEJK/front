@@ -1,14 +1,18 @@
-class PredictRequest{
-  final int magX;
-  final int magY;
-  final int magZ;
-  final int oriX;
+class PredictRequest {
+  final double magX;
+  final double magY;
+  final double magZ;
+  final double oriAzimuth;
+  final double oriPitch;
+  final double oriRoll;
 
   PredictRequest({
     required this.magX,
     required this.magY,
     required this.magZ,
-    required this.oriX
+    required this.oriAzimuth,
+    required this.oriPitch,
+    required this.oriRoll,
   });
 
   Map<String, dynamic> toJson() {
@@ -16,7 +20,10 @@ class PredictRequest{
       'Mag_X': magX,
       'Mag_Y': magY,
       'Mag_Z': magZ,
-      'Ori_X': oriX,
+      'Ori_X': oriAzimuth,
+      'Ori_Y': oriPitch,
+      'Ori_Z': oriRoll,
     };
   }
 }
+

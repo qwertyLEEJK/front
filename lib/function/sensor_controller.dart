@@ -86,10 +86,27 @@ class SensorController extends GetxController {
     super.onClose();
   }
 
+  /// 라디안 값을 -pi ~ pi로 정규화
+  double normalize180(double rad) {
+    while (rad <= -pi) rad += 2 * pi;
+    while (rad > pi) rad -= 2 * pi;
+    return rad;
+  }
+
   // Pitch, Roll 계산 (단위: 라디안)
   void _updatePitchRoll(double ax, double ay, double az) {
-    final pitch = atan2(-ax, sqrt(ay * ay + az * az));
-    final roll = atan2(ay, az);
+    final pitch = atan2(ay, az);
+
+    double roll = atan2(-ax, sqrt(ay * ay + az * az));
+    if (az < 0) {
+      if (ay >= 0) {
+        roll = pi - roll;
+      } else {
+        roll = -pi - roll;
+      }
+    }
+    roll = normalize180(roll); // <- roll을 -pi ~ pi로 정규화
+
     accelerometer.update((data) {
       if (data != null) {
         data.pitch = pitch;
@@ -97,16 +114,21 @@ class SensorController extends GetxController {
       }
     });
   }
-  PredictRequest getCurrentSensorValues()
-  {
+
+  // API가 요구하는 값에 맞춰서 현재 센서값을 PredictRequest로 반환 (실수값!)
+  PredictRequest getCurrentSensorValues() {
     final mag = magnetometer.value;
-    final oriX = direction.value;
+    final azimuth = direction.value; // heading
+    final pitch = accelerometer.value.pitch * 180 / pi; // 라디안 → 도(°)
+    final roll = accelerometer.value.roll * 180 / pi;   // 라디안 → 도(°), -180~180 보장
 
     return PredictRequest(
-        magX: mag.x.round(),
-        magY: mag.y.round(),
-        magZ: mag.z.round(),
-        oriX: oriX.round(),
+      magX: mag.x,
+      magY: mag.y,
+      magZ: mag.z,
+      oriAzimuth: azimuth,
+      oriPitch: -pitch, //pitch랑 roll 바뀌어서 그냥 바꿔서 적음
+      oriRoll: roll,
     );
   }
 }
