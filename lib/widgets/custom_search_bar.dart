@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:midas_project/theme/app_colors.dart';
+import 'package:midas_project/theme/app_theme.dart';
 
 class CustomSearchBar extends StatelessWidget {
   final TextEditingController? controller;
@@ -17,13 +19,12 @@ class CustomSearchBar extends StatelessWidget {
       child: Container(
         height: 50,
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.grayscale.s30,
           border: Border.all(
-            color: Colors.grey,
+            color: AppColors.grayscale.s100,
             width: 1,
           ),
-          borderRadius: BorderRadius.circular(5),
-          // boxShadow: [BoxShadow(color: Colors.black12, blurRadius: 6)],
+          borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
           children: [
@@ -31,8 +32,9 @@ class CustomSearchBar extends StatelessWidget {
             Expanded(
               child: TextField(
                 controller: controller,
-                decoration: const InputDecoration(
+                decoration: InputDecoration(
                   hintText: '검색',
+                  hintStyle: AppTextStyles.body2_1.copyWith(color: AppColors.grayscale.s500),
                   border: InputBorder.none,
                   isCollapsed: true,
                 ),

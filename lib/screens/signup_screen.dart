@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:midas_project/theme/app_colors.dart';
+import 'package:midas_project/theme/app_theme.dart';
 import 'login_screen.dart';
 
 class SignupScreen extends StatefulWidget {
@@ -32,7 +33,7 @@ class _SignupScreenState extends State<SignupScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.grayscale.s30,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -42,9 +43,8 @@ class _SignupScreenState extends State<SignupScreen> {
                 const SizedBox(height: 80),
                 Text(
                   '회원가입',
-                  style: GoogleFonts.pacifico(
-                    fontSize: 32,
-                    color: const Color(0xFF2ECC9B),
+                  style: AppTextStyles.title1.copyWith(
+                    color: AppColors.primary.s500,
                   ),
                 ),
                 const SizedBox(height: 40),
@@ -88,20 +88,20 @@ class _SignupScreenState extends State<SignupScreen> {
 
                 const SizedBox(height: 32),
 
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _signup,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2ECC9B),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+                GestureDetector(
+                  onTap: _signup,
+                  child: Container(
+                    width: double.infinity,
+                    height: 50,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.s500,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Text(
+                    child: Text(
                       '회원가입',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s30, height: 1.0),
                     ),
                   ),
                 ),
@@ -143,21 +143,21 @@ class _SignupScreenState extends State<SignupScreen> {
         obscureText: obscureText,
         decoration: InputDecoration(
           hintText: hintText,
-          hintStyle: const TextStyle(color: Colors.grey),
+          hintStyle: TextStyle(color: AppColors.grayscale.s500),
           filled: true,
-          fillColor: Colors.white,
+          fillColor: AppColors.grayscale.s30,
           contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Colors.black, width: 1),
+            borderSide: BorderSide(color: AppColors.grayscale.s500, width: 1),
           ),
           enabledBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Colors.black, width: 1),
+            borderSide: BorderSide(color: AppColors.grayscale.s500, width: 1),
           ),
           focusedBorder: OutlineInputBorder(
             borderRadius: BorderRadius.circular(10),
-            borderSide: const BorderSide(color: Colors.black, width: 2),
+            borderSide: BorderSide(color: AppColors.grayscale.s500, width: 2),
           ),
           suffixIcon: suffixIcon,
         ),
