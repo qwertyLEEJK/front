@@ -28,7 +28,7 @@ class CustomBottomNavBar extends StatelessWidget {
         top: false, // ✅ 상단은 안전 영역이 필요 없으므로 false로 설정
         child: Container(
           // ✅ 아이콘과 텍스트가 실제로 차지할 영역의 높이를 지정 (피그마 디자인 상 38로 확인되나 실행해 보고 확인할 예정)
-          height: 38,
+          height: 58,
           child: Row(
             mainAxisAlignment: MainAxisAlignment.spaceAround,
             children: [
@@ -43,6 +43,7 @@ class CustomBottomNavBar extends StatelessWidget {
       ),
     );
   }
+
 
   Widget _buildNavItem({required int index, required String label}) {
     final bool isSelected = currentIndex == index;
@@ -64,11 +65,11 @@ class CustomBottomNavBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
-              'assets/images/${iconName}_${isSelected ? 'selected' : 'unselected'}.png',
+              'lib/assets/images/${iconName}_${isSelected ? 'selected' : 'unselected'}.png',
               width: 24,
               height: 24,
             ),
-            const SizedBox(height: 4),
+            const SizedBox(height: 10),
             Text(
               label,
               style: isSelected
