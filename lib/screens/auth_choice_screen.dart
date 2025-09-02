@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:midas_project/theme/app_theme.dart';  // 텍스트 스타일 테마 파일
+import 'package:midas_project/theme/app_colors.dart'; // 색상 테마 파일
 import 'login_screen.dart';
 import 'signup_screen.dart';
 
@@ -9,7 +11,7 @@ class AuthChoiceScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.grayscale.s30,
       body: SafeArea(
         child: Column(
           children: [
@@ -17,64 +19,64 @@ class AuthChoiceScreen extends StatelessWidget {
             Text(
               'Title',
               style: GoogleFonts.pacifico(
-                fontSize: 42,
-                color: const Color(0xFF2ECC9B),
+                fontSize: 64,
+                color: AppColors.primary.s500,
               ),
             ),
             const Spacer(),
+
+            // 로그인 버튼
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const LoginScreen(),
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2ECC9B),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const LoginScreen()),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 50,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.s500,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Text(
+                  child: Text(
                     '로그인',
-                    style: TextStyle(fontSize: 16, color: Colors.white),
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s30, height: 1.0),
                   ),
                 ),
               ),
             ),
+
+            // 회원가입 버튼
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 8),
-              child: SizedBox(
-                width: double.infinity,
-                height: 50,
-                child: ElevatedButton(
-                  onPressed: () {
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const SignupScreen(), // ✅ 회원가입 페이지로 이동
-                      ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFFEFFFF9),
-                    foregroundColor: const Color(0xFF2ECC9B),
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
+              child: GestureDetector(
+                onTap: () {
+                  Navigator.of(context).push(
+                    MaterialPageRoute(builder: (_) => const SignupScreen()),
+                  );
+                },
+                child: Container(
+                  width: double.infinity,
+                  height: 50,
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary.s50,
+                    borderRadius: BorderRadius.circular(10),
                   ),
-                  child: const Text(
+                  child: Text(
                     '회원가입',
-                    style: TextStyle(fontSize: 16),
+                    textAlign: TextAlign.center,
+                    style: AppTextStyles.title7.copyWith(color: AppColors.primary.s500, height: 1.0),
                   ),
                 ),
               ),
             ),
+
             const SizedBox(height: 30),
           ],
         ),

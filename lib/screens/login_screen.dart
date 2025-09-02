@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'main_scaffold.dart';
+import 'package:midas_project/screens/5.%20profile_screen.dart';
+import 'package:midas_project/theme/app_colors.dart';
+import 'package:midas_project/theme/app_theme.dart';
+// import 'main_scaffold.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -24,7 +26,8 @@ class _LoginScreenState extends State<LoginScreen> {
   void _login() {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (_, __, ___) => const MainScaffold(),
+        // pageBuilder: (_, __, ___) => const MainScaffold(),
+        pageBuilder: (_, __, ___) => const ProfileScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
             opacity: animation,
@@ -39,7 +42,7 @@ class _LoginScreenState extends State<LoginScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.grayscale.s30,
       body: SafeArea(
         child: SingleChildScrollView(
           child: Padding(
@@ -49,12 +52,12 @@ class _LoginScreenState extends State<LoginScreen> {
                 const SizedBox(height: 80),
                 Text(
                   '환영합니다!',
-                  style: GoogleFonts.pacifico(
-                    fontSize: 32,
-                    color: const Color(0xFF2ECC9B),
+                  style: AppTextStyles.title1.copyWith(
+                    color: AppColors.primary.s500,
                   ),
                 ),
                 const SizedBox(height: 40),
+
                 // 아이디 인풋박스
                 Container(
                   margin: const EdgeInsets.symmetric(vertical: 8),
@@ -62,26 +65,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     controller: _idController,
                     decoration: InputDecoration(
                       hintText: '아이디',
-                      hintStyle: const TextStyle(color: Colors.grey),
+                      hintStyle: AppTextStyles.body2_1.copyWith(color: AppColors.grayscale.s500),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: AppColors.grayscale.s30,
                       contentPadding:
                           const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.black, width: 1),
+                        borderSide: BorderSide(color: AppColors.grayscale.s500, width: 1),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.black, width: 1),
+                        borderSide: BorderSide(color: AppColors.grayscale.s500, width: 1),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.black, width: 2),
+                        borderSide: BorderSide(color: AppColors.grayscale.s500, width: 2),
                       ),
                     ),
                   ),
                 ),
+
                 // 비밀번호 인풋박스
                 Container(
                   margin: const EdgeInsets.symmetric(vertical: 8),
@@ -90,27 +94,27 @@ class _LoginScreenState extends State<LoginScreen> {
                     obscureText: _obscureText,
                     decoration: InputDecoration(
                       hintText: '비밀번호',
-                      hintStyle: const TextStyle(color: Colors.grey),
+                      hintStyle: AppTextStyles.body2_1.copyWith(color: AppColors.grayscale.s500),
                       filled: true,
-                      fillColor: Colors.white,
+                      fillColor: AppColors.grayscale.s30,
                       contentPadding:
                           const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                       border: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.black, width: 1),
+                        borderSide: BorderSide(color: AppColors.grayscale.s500, width: 1),
                       ),
                       enabledBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.black, width: 1),
+                        borderSide: BorderSide(color: AppColors.grayscale.s500, width: 1),
                       ),
                       focusedBorder: OutlineInputBorder(
                         borderRadius: BorderRadius.circular(10),
-                        borderSide: const BorderSide(color: Colors.black, width: 2),
+                        borderSide: BorderSide(color: AppColors.grayscale.s500, width: 2),
                       ),
                       suffixIcon: IconButton(
                         icon: Icon(
                           _obscureText ? Icons.visibility_off : Icons.visibility,
-                          color: Colors.grey,
+                          color: AppColors.grayscale.s500,
                         ),
                         onPressed: () {
                           setState(() {
@@ -121,25 +125,31 @@ class _LoginScreenState extends State<LoginScreen> {
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 32),
-                SizedBox(
-                  width: double.infinity,
-                  height: 50,
-                  child: ElevatedButton(
-                    onPressed: _login,
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: const Color(0xFF2ECC9B),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(10),
-                      ),
+
+                // 로그인 버튼
+                GestureDetector(
+                  onTap: _login,
+                  child: Container(
+                    width: double.infinity,
+                    height: 50,
+                    alignment: Alignment.center,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary.s500,
+                      borderRadius: BorderRadius.circular(10),
                     ),
-                    child: const Text(
+                    child: Text(
                       '로그인',
-                      style: TextStyle(fontSize: 16, color: Colors.white),
+                      textAlign: TextAlign.center,
+                      style: AppTextStyles.title7.copyWith(color: Colors.white, height: 1.0),
                     ),
                   ),
                 ),
+
                 const SizedBox(height: 24),
+
+                // 소셜 로그인 버튼들
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
@@ -156,8 +166,8 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(width: 20),
                     // 구글
                     _SocialCircleButton(
-                      backgroundColor: Colors.white,
-                      border: Border.all(color: Colors.grey),
+                      backgroundColor: AppColors.grayscale.s30,
+                      border: Border.all(color: AppColors.grayscale.s500),
                       onTap: () {},
                       child: Image.asset(
                         'lib/구글.png',
@@ -168,7 +178,7 @@ class _LoginScreenState extends State<LoginScreen> {
                     const SizedBox(width: 20),
                     // 네이버
                     _SocialCircleButton(
-                      backgroundColor: Colors.white,
+                      backgroundColor: AppColors.grayscale.s30,
                       onTap: () {},
                       child: Image.asset(
                         'lib/네이버.png',

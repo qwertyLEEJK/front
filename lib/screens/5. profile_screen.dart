@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:midas_project/theme/app_colors.dart';
+import 'package:midas_project/theme/app_theme.dart';
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -11,52 +13,57 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 0=집/회사, 1=자주가는곳, 2=버스
   int selectedIndex = 0;
 
+  // (에셋 prefix, 라벨)  ex) lib/assets/images/home_selected.png / home_unselected.png
   final _menus = const [
-    (Icons.home_outlined, "집/회사"),
-    (Icons.place_outlined, "자주가는곳"),
-    (Icons.directions_bus_outlined, "버스"),
+    ("home", "집/회사"),
+    ("mappoint", "자주가는곳"),
+    ("bus", "버스"),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.grayscale.s30,
       body: SafeArea(
         child: Column(
           children: [
-            // 상단 프로필 헤더
+            // ===== 상단 프로필 헤더 (기본 Icon 사용) =====
             const _ProfileHeader(),
 
+            
+            const Divider(height: 1, thickness: 0.3),
             const SizedBox(height: 8),
 
-            // 카테고리 탭 (버튼만 강조 변경, 아래 내용 갈아끼움)
+            // ===== 탭바 (좌측 20 들여쓰기, 탭 간격 36, 왼쪽 정렬) =====
             Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 12),
+              padding: const EdgeInsets.only(left: 20), // 좌측 여백 20
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                mainAxisAlignment: MainAxisAlignment.start,
                 children: List.generate(_menus.length, (i) {
                   final item = _menus[i];
                   final isSelected = i == selectedIndex;
-                  return _CategoryTab(
-                    icon: item.$1,
-                    label: item.$2,
-                    selected: isSelected,
-                    onTap: () => setState(() => selectedIndex = i),
+                  return Padding(
+                    padding: EdgeInsets.only(
+                      right: i == _menus.length - 1 ? 0 : 36, // 마지막 탭 제외 36 간격
+                    ),
+                    child: _CategoryTab(
+                      iconName: item.$1,
+                      label: item.$2,
+                      selected: isSelected,
+                      onTap: () => setState(() => selectedIndex = i),
+                    ),
                   );
                 }),
               ),
             ),
 
             const SizedBox(height: 8),
-            const Divider(height: 1),
+            const Divider(height: 1, thickness: 0.3),
 
-            // 선택된 카테고리에 따라 아래 내용 변경
+            // ===== 컨텐츠 =====
             Expanded(
               child: _buildContent(selectedIndex),
             ),
-
-            // 하단 여백(혹시 하단 네비바와 겹치면 제거하세요)
-            // const SizedBox(height: 8),
           ],
         ),
       ),
@@ -104,7 +111,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-/// 상단 프로필 헤더 (닉네임 + 편집, 오른쪽 종/설정)
+/// ===== 상단 프로필 헤더 (닉네임 + 편집, 오른쪽 종/설정) =====
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader();
 
@@ -114,21 +121,20 @@ class _ProfileHeader extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
       child: Row(
         children: [
-          const CircleAvatar(
+          CircleAvatar(
             radius: 20,
-            backgroundColor: Colors.grey,
-            child: Icon(Icons.person, color: Colors.white),
+            backgroundColor: AppColors.grayscale.s500,
+            child: Icon(Icons.person, color: AppColors.grayscale.s30),
           ),
           const SizedBox(width: 12),
           Row(
             children: [
-              const Text(
+              Text(
                 '닉네임',
-                style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s900),
               ),
-              const SizedBox(width: 4),
               IconButton(
-                icon: const Icon(Icons.edit, size: 18, color: Colors.grey),
+                icon: Icon(Icons.edit, size: 18, color: AppColors.grayscale.s500),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () {
@@ -152,7 +158,7 @@ class _ProfileHeader extends StatelessWidget {
                           ),
                           TextButton(
                             onPressed: () {
-                              // 저장 로직
+                              // TODO: 저장 로직
                               Navigator.pop(ctx);
                             },
                             child: const Text("확인"),
@@ -175,7 +181,7 @@ class _ProfileHeader extends StatelessWidget {
           IconButton(
             icon: const Icon(Icons.settings_outlined),
             onPressed: () {
-              //설정 페이지 이동
+              // 설정 페이지 이동
             },
           ),
         ],
@@ -184,15 +190,15 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-/// 탭 버튼(선택 시 아이콘/텍스트 진해지고, 밑줄 표시)
+/// ===== 탭 버튼 (에셋 아이콘 + isSelected, 밑줄 제거) =====
 class _CategoryTab extends StatelessWidget {
-  final IconData icon;
+  final String iconName;
   final String label;
   final bool selected;
   final VoidCallback onTap;
 
   const _CategoryTab({
-    required this.icon,
+    required this.iconName,
     required this.label,
     required this.selected,
     required this.onTap,
@@ -200,36 +206,32 @@ class _CategoryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? Colors.black : Colors.grey;
+    final textColor = selected ? AppColors.grayscale.s900 : AppColors.grayscale.s500;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: Column(
         mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.center, // 텍스트도 좌기준 정렬
         children: [
-          Icon(icon, color: color),
-          const SizedBox(height: 4),
+          Image.asset(
+            'lib/assets/images/${iconName}_${selected ? 'selected' : 'unselected'}.png',
+            width: 24,
+            height: 24,
+          ),
+          const SizedBox(height: 10),
           Text(
             label,
-            style: TextStyle(
-              color: color,
-              fontWeight: selected ? FontWeight.bold : FontWeight.normal,
-            ),
+            style: AppTextStyles.caption2_2.copyWith(color : textColor),
           ),
-          const SizedBox(height: 6),
-          // 밑줄 인디케이터
-          Container(
-            height: 2,
-            width: 48,
-            color: selected ? Colors.black : Colors.transparent,
-          ),
+          // 밑줄 제거 (원하면 여기 SizedBox(height: 6) 등으로 여백만 추가)
         ],
       ),
     );
   }
 }
 
-/// 리스트 공통 위젯 (섹션 타이틀 + 타일들)
+/// ===== 리스트 공통 위젯 (섹션 타이틀 + 타일들) =====
 class _FavoriteList extends StatelessWidget {
   final String title;
   final List<(String, String)> items; // (왼쪽 작은 라벨, 메인 주소/이름)
@@ -246,35 +248,38 @@ class _FavoriteList extends StatelessWidget {
     return Column(
       children: [
         // 섹션 타이틀
+        const SizedBox(height: 20),
         Container(
           width: double.infinity,
-          padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
           child: Text(
             title,
-            style: const TextStyle(
-              fontWeight: FontWeight.w700,
-              fontSize: 16,
-            ),
+            style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s900)
           ),
         ),
-        const Divider(height: 1),
+        const SizedBox(height: 10),
+        const Divider(height: 1, thickness: 0.3),
 
         // 리스트
         Expanded(
           child: ListView.separated(
             itemCount: items.length,
-            separatorBuilder: (_, __) => const Divider(height: 1),
+            separatorBuilder: (_, __) => const Divider(height: 1, thickness: 0.3),
             itemBuilder: (context, index) {
               final (small, main) = items[index];
               return ListTile(
-                leading: Icon(leadingIcon, color: Colors.black87),
+                leading: Image.asset(
+                  'lib/assets/images/home_selected.png',
+                  height: 24,
+                  width: 24,
+                  color: AppColors.grayscale.s900),
                 title: Text(
                   main,
-                  style: const TextStyle(fontSize: 15),
+                  style: AppTextStyles.body1_1.copyWith(color: AppColors.grayscale.s900),
                 ),
                 subtitle: Text(
                   small,
-                  style: const TextStyle(color: Colors.grey, fontSize: 12),
+                  style: AppTextStyles.caption2_1.copyWith(color: AppColors.grayscale.s500),
                 ),
                 onTap: () {
                   // 항목 터치 시 동작
@@ -292,8 +297,8 @@ class _FavoriteList extends StatelessWidget {
             height: 44,
             child: OutlinedButton(
               style: OutlinedButton.styleFrom(
-                side: const BorderSide(color: Color(0xFFE5E5E5)),
-                backgroundColor: const Color(0xFFF7F7F9),
+                side: BorderSide(color: AppColors.grayscale.s30),
+                backgroundColor: AppColors.grayscale.s100,
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -301,9 +306,9 @@ class _FavoriteList extends StatelessWidget {
               onPressed: () {
                 // 등록 액션
               },
-              child: const Text(
+              child: Text(
                 "주소 등록 하기",
-                style: TextStyle(color: Colors.black87, fontWeight: FontWeight.w600),
+                style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s900),
               ),
             ),
           ),
