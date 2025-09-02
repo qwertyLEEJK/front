@@ -38,10 +38,6 @@ android {
         }
     }
 }
-repositories {
-    maven { url 'https://devrepo.kakao.com/nexus/repository/kakaomap-releases/' }
-}
-implementation 'com.kakao.maps.open:android:2.12.8'
 
 flutter {
     source = "../.."
