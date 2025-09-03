@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:midas_project/screens/5.%20profile_screen.dart';
 import 'package:midas_project/theme/app_colors.dart';
 import 'package:midas_project/theme/app_theme.dart';
-// import 'main_scaffold.dart';
+import 'main_scaffold.dart';
 
 class LoginScreen extends StatefulWidget {
   const LoginScreen({super.key});
@@ -26,8 +26,8 @@ class _LoginScreenState extends State<LoginScreen> {
   void _login() {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        // pageBuilder: (_, __, ___) => const MainScaffold(),
-        pageBuilder: (_, __, ___) => const ProfileScreen(),
+        pageBuilder: (_, __, ___) => const MainScaffold(),
+        //pageBuilder: (_, __, ___) => const ProfileScreen(),
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(
             opacity: animation,
