@@ -3,6 +3,7 @@ import 'dart:async';
 import 'package:get/get.dart';
 import '../function/sensor_controller.dart';
 import '../function/Predict_api.dart';
+import 'dart:collection'; //주석 부분 때문에 필요한 패키지
 
 final List<Map<String, dynamic>> markerList = [
   {"x": 3100, "y": 830}, //1
@@ -26,6 +27,107 @@ final List<Map<String, dynamic>> markerList = [
 final List<int> markerApiValues = [
   1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16
 ];
+
+/*
+void main() {
+  List<String> rawGrid = [
+    "111111111111111111111111111111111111111111111111111111111111111111",
+    "1111111111111111111111111111101111111111111111111E1111111111111111",
+    "111111111111111111111111111110111111111111111111101111111111111111",
+    "1S0000000000000000000000000000000000000000000000000000000000000001",
+    "111111111111111111111111111110111111111111111111111111111111111111",
+    "111111111111111111111111111110111111111111111111111111111111111111",
+    "111111111111111111111111111111111111111111111111111111111111111111"
+  ];
+
+  int n = rawGrid.length;
+  int m = rawGrid[0].length;
+  List<List<String>> grid =
+      rawGrid.map((row) => row.split('')).toList();
+
+  // S, E 좌표 찾기
+  late Point start, end;
+  for (int i = 0; i < n; i++) {
+    for (int j = 0; j < m; j++) {
+      if (grid[i][j] == 'S') {
+        start = Point(i, j);
+      }
+      if (grid[i][j] == 'E') {
+        end = Point(i, j);
+      }
+    }
+  }
+
+  // BFS
+  Queue<Point> q = Queue();
+  q.add(start);
+  Map<Point, Point?> prev = {};
+  prev[start] = null;
+
+  List<List<int>> dirs = [
+    [1, 0],
+    [-1, 0],
+    [0, 1],
+    [0, -1]
+  ];
+
+  while (q.isNotEmpty) {
+    Point cur = q.removeFirst();
+    if (cur == end) break;
+    for (var d in dirs) {
+      int nx = cur.x + d[0];
+      int ny = cur.y + d[1];
+      if (nx < 0 || ny < 0 || nx >= n || ny >= m) continue;
+      if (grid[nx][ny] == '1') continue;
+      Point next = Point(nx, ny);
+      if (prev.containsKey(next)) continue;
+      prev[next] = cur;
+      q.add(next);
+    }
+  }
+
+  if (!prev.containsKey(end)) {
+    print("경로 없음");
+    return;
+  }
+
+  // 경로 복원
+  List<Point> path = [];
+  Point? cur = end;
+  while (cur != null) {
+    path.add(cur);
+    cur = prev[cur];
+  }
+  path = path.reversed.toList();
+
+  // 경로 표시
+  for (var p in path) {
+    if (grid[p.x][p.y] != 'S' && grid[p.x][p.y] != 'E') {
+      grid[p.x][p.y] = '.';
+    }
+  }
+
+  // 결과 출력
+  for (var row in grid) {
+    print(row.join());
+  }
+  print("최단 거리: ${path.length - 1}");
+}
+
+class Point {
+  final int x, y;
+  const Point(this.x, this.y);
+
+  @override
+  bool operator ==(Object other) =>
+      other is Point && other.x == x && other.y == y;
+
+  @override
+  int get hashCode => x.hashCode ^ y.hashCode;
+}
+*/
+
+
 
 const double imageOriginWidth = 3508;
 const double imageOriginHeight = 1422;
