@@ -17,11 +17,6 @@ class MainScaffold extends StatefulWidget {
 
 class _MainScaffoldState extends State<MainScaffold> {
   int _currentIndex = 0;
-  final TextEditingController _searchController = TextEditingController();
-
-  void _onSearch() {
-    print("검색어: ${_searchController.text}");
-  }
 
   void _onTap(int index) {
     setState(() {
@@ -29,7 +24,9 @@ class _MainScaffoldState extends State<MainScaffold> {
     });
   }
 
-  bool get _showSearchBar => _currentIndex != 4; // 내정보 탭만 검색창 제외
+  // ✨ 이 부분이 수정되었습니다.
+  // 검색 탭(인덱스 3)과 내정보 탭(인덱스 4)에서 검색창 숨기기
+  bool get _showSearchBar => _currentIndex != 3 && _currentIndex != 4;
 
   @override
   Widget build(BuildContext context) {
@@ -43,9 +40,14 @@ class _MainScaffoldState extends State<MainScaffold> {
         child: Column(
           children: [
             if (_showSearchBar)
-              CustomSearchBar(
-                controller: _searchController,
-                onSearch: _onSearch,
+              Padding(
+                padding: const EdgeInsets.only(
+                  top: 16.0,
+                  left: 20.0,
+                  right: 20.0,
+                ),
+                // CustomSearchBar를 파라미터 없이 호출합니다.
+                child: CustomSearchBar(),
               ),
             Expanded(
               child: IndexedStack(
@@ -54,7 +56,7 @@ class _MainScaffoldState extends State<MainScaffold> {
                   HomeScreen(),
                   TransportScreen(),
                   MapScreen(),
-                  SearchScreen(),
+                  SearchScreen(), // 자체 검색창을 가진 화면
                   ProfileScreen(),
                 ],
               ),

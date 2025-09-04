@@ -14,10 +14,7 @@ class AppColors {
   static const secondary = _Secondary();
 
   // 기타 색상들
-  // 이건 일단은 넣어 놨는데, 혹시나 해당 이름으로 색상 설정해 둔 게 있다면 피그마 보고 해당 색상으로 다 수정해 둘 것
-  static const Color backgroundColor = Color(0xFFFFFFFF);
-  static const Color textColor = Color(0xFF2c3e50);
-  static const Color errorColor = Color(0xFFe74c3c);
+
 }
 
 // Grayscale 색상들을 정의하는 private 클래스

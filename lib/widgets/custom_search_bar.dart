@@ -1,23 +1,25 @@
 import 'package:flutter/material.dart';
+import 'package:midas_project/screens/search_screen.dart';
 import 'package:midas_project/theme/app_colors.dart';
 import 'package:midas_project/theme/app_theme.dart';
 
 class CustomSearchBar extends StatelessWidget {
-  final TextEditingController? controller;
-  final VoidCallback? onSearch;
-
   const CustomSearchBar({
     super.key,
-    this.controller,
-    this.onSearch,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 20.0),
+    return GestureDetector(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(builder: (context) => const SearchScreen()),
+        );
+      },
       child: Container(
-        height: 50,
+        height: 48,
+        padding: const EdgeInsets.symmetric(horizontal: 18),
         decoration: BoxDecoration(
           color: AppColors.grayscale.s30,
           border: Border.all(
@@ -27,23 +29,16 @@ class CustomSearchBar extends StatelessWidget {
           borderRadius: BorderRadius.circular(8),
         ),
         child: Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
-            const SizedBox(width: 18),
-            Expanded(
-              child: TextField(
-                controller: controller,
-                decoration: InputDecoration(
-                  hintText: '검색',
-                  hintStyle: AppTextStyles.body2_1.copyWith(color: AppColors.grayscale.s500),
-                  border: InputBorder.none,
-                  isCollapsed: true,
-                ),
-                onSubmitted: (_) => onSearch?.call(),
-              ),
+            Text(
+              '검색',
+              style: AppTextStyles.body2_1.copyWith(color: AppColors.grayscale.s500),
             ),
-            IconButton(
-              icon: const Icon(Icons.search),
-              onPressed: onSearch,
+            Image.asset(
+              'lib/assets/images/magnifer.png', // 이미지 파일 경로
+              width: 24,
+              height: 24,
             ),
           ],
         ),
