@@ -1,5 +1,8 @@
 // lib/widgets/slide_up_card.dart
 import 'package:flutter/material.dart';
+import 'package:midas_project/theme/app_colors.dart';
+import 'package:midas_project/theme/app_theme.dart';  // 텍스트 스타일 테마 파일
+import 'package:midas_project/theme/app_colors.dart'; // 색상 테마 파일
 
 class SlideUpCard extends StatelessWidget {
   final VoidCallback onClose;
@@ -11,10 +14,10 @@ class SlideUpCard extends StatelessWidget {
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        height: 300,
+        height: 227,
         padding: EdgeInsets.all(16),
         decoration: BoxDecoration(
-          color: Colors.white,
+          color: AppColors.grayscale.s30,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
           boxShadow: [BoxShadow(blurRadius: 10, color: Colors.black26)],
         ),
@@ -24,12 +27,12 @@ class SlideUpCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text("영남대학교 IT관", style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold)),
+                Text("영남대학교 IT관", style: AppTextStyles.title6),
                 Icon(Icons.star)
               ],
             ),
             SizedBox(height: 10),
-            Text("경북 경산시 삼풍동 영남대학교 공과대학본관", style: TextStyle(fontSize: 14, color: Color(0xFF868E96)),),
+            Text("경북 경산시 삼풍동 영남대학교 공과대학본관", style: AppTextStyles.body2_1.copyWith(color: AppColors.grayscale.s600)),
             Spacer(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6), // 18px → 6LP
@@ -41,13 +44,13 @@ class SlideUpCard extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFF20C997),
-                          foregroundColor: Colors.white,
+                          backgroundColor:AppColors.primary.s500,
+                          foregroundColor: AppColors.grayscale.s30,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
                           )
                         ),
-                        child: Text("출발"),
+                        child: Text("출발", style: AppTextStyles.body1_3.copyWith(color: AppColors.grayscale.s30)),
                       ),
                     ),
                   ),
@@ -58,13 +61,13 @@ class SlideUpCard extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: Color(0xFFE6FCF5),
-                          foregroundColor: Color(0xFF20C997),
+                          backgroundColor: AppColors.primary.s50,
+                          foregroundColor: AppColors.primary.s500,
                           shape: RoundedRectangleBorder(
                             borderRadius: BorderRadius.circular(6),
                           )
                         ),
-                        child: Text("도착"),
+                        child: Text("도착", style: AppTextStyles.body1_3.copyWith(color: AppColors.primary.s500)),
                       ),
                     ),
                   ),
