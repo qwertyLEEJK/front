@@ -16,11 +16,18 @@ class TestPlaceInfoApp extends StatelessWidget {
       home: Scaffold( // Scaffold를 추가하여 기본적인 앱 구조를 제공
         appBar: AppBar(title: const Text('Place Info Test')),
         body: Center(
-          child: SlideUpCard(
-            onClose: () {
-              // 테스트를 위한 간단한 닫기 동작 (예: 콘솔 출력 또는 아무것도 안 함)
-              print('SlideUpCard closed');
-            },
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Image.asset('lib/assets/images/star.png', width: 100, height: 100),
+              const SizedBox(height: 20),
+              SlideUpCard(
+                onClose: () {
+                  // 테스트를 위한 간단한 닫기 동작 (예: 콘솔 출력 또는 아무것도 안 함)
+                  print('SlideUpCard closed');
+                },
+              ),
+            ],
           ),
         ),
       ),

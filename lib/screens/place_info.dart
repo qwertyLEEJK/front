@@ -19,7 +19,7 @@ class SlideUpCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.grayscale.s30,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          boxShadow: [BoxShadow(blurRadius: 10, color: Colors.black26)],
+          border: Border(top: BorderSide(color:AppColors.grayscale.s100, width: 1)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -28,7 +28,7 @@ class SlideUpCard extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text("영남대학교 IT관", style: AppTextStyles.title6),
-                Icon(Icons.star)
+                Image.asset('lib/assets/images/star.png', width: 24, height: 24)
               ],
             ),
             SizedBox(height: 10),
@@ -44,6 +44,7 @@ class SlideUpCard extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(
+                          elevation: 0,
                           backgroundColor:AppColors.primary.s500,
                           foregroundColor: AppColors.grayscale.s30,
                           shape: RoundedRectangleBorder(
@@ -61,6 +62,7 @@ class SlideUpCard extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(
+                          elevation: 0,
                           backgroundColor: AppColors.primary.s50,
                           foregroundColor: AppColors.primary.s500,
                           shape: RoundedRectangleBorder(
