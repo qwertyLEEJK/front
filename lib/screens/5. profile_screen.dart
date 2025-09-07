@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:midas_project/models/favorite_model.dart';
+import 'package:midas_project/services/favorite_service.dart';
 import 'package:midas_project/theme/app_colors.dart';
 import 'package:midas_project/theme/app_theme.dart';
 
@@ -13,11 +15,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 0=집/회사, 1=자주가는곳, 2=버스
   int selectedIndex = 0;
 
+  final _favoriteService = FavoriteService();
+  List<Favorite> _allFavorites = [];
+
   final _menus = const [
     ("home", "집/회사"),
     ("mappointwave", "자주가는곳"),
     ("bus", "버스"),
   ];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadFavorites();
+  }
+
+  Future<void> _loadFavorites() async {
+    final favorites = await _favoriteService.getFavorites();
+    if (mounted) {
+      setState(() {
+        _allFavorites = favorites;
+      });
+    }
+  }
+
+  Future<void> _deleteFavorite(String id) async {
+    await _favoriteService.removeFavorite(id);
+    _loadFavorites();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -65,41 +90,31 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildContent(int index) {
-    final currentIconName = _menus[index].$1;
+    List<Favorite> filteredItems = [];
+    String title = "";
+    String currentIconName = _menus[index].$1;
+
     switch (index) {
       case 0:
-        return _FavoriteList(
-          title: "즐겨찾기",
-          items: const [
-            ("집", "대구광역시 00군 00"),
-            ("회사", "대구광역시 00군 00"),
-            ("집", "대구광역시 00군 00"),
-            ("회사", "대구광역시 00군 00"),
-          ],
-          iconName: currentIconName, // 선택한 메뉴 정보 전달해 아이콘 변경시킴
-        );
+        title = "즐겨찾기";
+        filteredItems = _allFavorites.whereType<PlaceFavorite>().where((fav) => fav.category == PlaceCategory.home || fav.category == PlaceCategory.work).toList();
+        break;
       case 1:
-        return _FavoriteList(
-          title: "자주가는곳",
-          items: const [
-            ("카페", "대구광역시 00구 00"),
-            ("헬스장", "대구광역시 00구 00"),
-            ("편의점", "대구광역시 00구 00"),
-          ],
-          iconName: currentIconName,
-        );
+        title = "자주가는곳";
+        filteredItems = _allFavorites.whereType<PlaceFavorite>().where((fav) => fav.category != PlaceCategory.home && fav.category != PlaceCategory.work).toList();
+        break;
       case 2:
       default:
-        return _FavoriteList(
-          title: "버스 정류장",
-          items: const [
-            ("정류장", "00-000 중앙시장"),
-            ("정류장", "00-001 시청앞"),
-            ("정류장", "00-002 대학로"),
-          ],
-          iconName: currentIconName,
-        );
+        title = "버스/정류장";
+        filteredItems = _allFavorites.where((fav) => fav is BusFavorite || fav is BusStopFavorite).toList();
+        break;
     }
+    return _FavoriteList(
+      title: title,
+      items: filteredItems,
+      iconName: currentIconName,
+      onDelete: _deleteFavorite,
+    );
   }
 }
 
@@ -232,13 +247,15 @@ class _CategoryTab extends StatelessWidget {
 /// ===== 리스트 공통 위젯 =====
 class _FavoriteList extends StatelessWidget {
   final String title;
-  final List<(String, String)> items;
+  final List<Favorite> items;
   final String iconName;
+  final Function(String) onDelete;
 
   const _FavoriteList({
     required this.title,
     required this.items,
     required this.iconName,
+    required this.onDelete,
   });
 
   @override
@@ -265,15 +282,38 @@ class _FavoriteList extends StatelessWidget {
               padding: EdgeInsets.zero,
               itemCount: items.length,
               itemBuilder: (context, index) {
-                final (small, main) = items[index];
+                final item = items[index];
+                String smallText = '';
+                String mainText = '';
+                String itemIconName;
+
+                if (item is PlaceFavorite) {
+                  smallText = item.name;
+                  mainText = item.address;
+                  itemIconName = (item.category == PlaceCategory.home || item.category == PlaceCategory.work) ? 'home' : 'mappointwave';
+                } else if (item is BusFavorite) {
+                  smallText = item.name;
+                  mainText = item.busNumber;
+                  itemIconName = 'bus';
+                } else if (item is BusStopFavorite) {
+                  smallText = item.stationName;
+                  mainText = item.stationId;
+                  itemIconName = 'bus';
+                } else {
+                  // Should not happen
+                  smallText = '알 수 없음';
+                  mainText = '데이터 오류';
+                  itemIconName = 'mappointwave';
+                }
+
                 return Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), // Adjusted vertical padding
                       child: Row(
                         children: [
                           Image.asset(
-                            'lib/assets/images/${iconName}_selected.png',
+                            'lib/assets/images/${itemIconName}_selected.png',
                             height: 24,
                             width: 24,
                             color: AppColors.grayscale.s900,
@@ -284,7 +324,7 @@ class _FavoriteList extends StatelessWidget {
                               crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
-                                  small,
+                                  smallText,
                                   style: AppTextStyles.caption2_1.copyWith(
                                     color: AppColors.grayscale.s500,
                                     height: 1.4,
@@ -292,7 +332,7 @@ class _FavoriteList extends StatelessWidget {
                                 ),
                                 const SizedBox(height: 2),
                                 Text(
-                                  main,
+                                  mainText,
                                   style: AppTextStyles.body1_1.copyWith(
                                     color: AppColors.grayscale.s900,
                                     height: 1.4,
@@ -302,6 +342,12 @@ class _FavoriteList extends StatelessWidget {
                               ],
                             ),
                           ),
+                          IconButton(
+                            icon: Icon(Icons.close, color: AppColors.grayscale.s500, size: 20),
+                            onPressed: () => onDelete(item.id),
+                            padding: EdgeInsets.zero,
+                            constraints: const BoxConstraints(),
+                          )
                         ],
                       ),
                     ),
