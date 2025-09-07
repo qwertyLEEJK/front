@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:midas_project/models/favorite_model.dart';
+import 'package:midas_project/services/favorite_service.dart';
 import 'package:midas_project/services/search_history_service.dart';
 import 'package:midas_project/theme/app_colors.dart';
 import 'package:midas_project/theme/app_theme.dart';
-import 'package:midas_project/widgets/custom_search_bar.dart'; // CustomSearchBar를 import 합니다.
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -12,14 +13,20 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
+  // 기존 검색 기록 서비스
   final SearchHistoryService _searchHistoryService = SearchHistoryService();
   final TextEditingController _textController = TextEditingController();
   List<String> _searchHistory = [];
+
+  // 새로 추가된 즐겨찾기 서비스
+  final FavoriteService _favoriteService = FavoriteService();
+  List<Favorite> _favorites = [];
 
   @override
   void initState() {
     super.initState();
     _loadSearchHistory();
+    _loadFavorites(); // 즐겨찾기 목록 로드
   }
 
   // --- 데이터 처리 로직 ---
@@ -50,17 +57,31 @@ class _SearchScreenState extends State<SearchScreen> {
     _loadSearchHistory();
   }
 
+  // 즐겨찾기 데이터 처리 로직
+  Future<void> _loadFavorites() async {
+    final favs = await _favoriteService.getFavorites();
+    if (mounted) {
+      setState(() {
+        _favorites = favs;
+      });
+    }
+  }
+
+  Future<void> _deleteFavorite(String id) async {
+    await _favoriteService.removeFavorite(id);
+    _loadFavorites();
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      // 1. 기존 AppBar를 제거하고 body에서 UI를 구성합니다.
+      backgroundColor: AppColors.grayscale.s30,
       body: SafeArea(
         child: Column(
           children: [
-            // 2. 검색창 UI를 직접 구성합니다.
+            // 검색창 UI
             Padding(
-              padding: const EdgeInsets.only(top: 16.0, left: 20.0, right: 20.0, bottom: 8.0),
+              padding: const EdgeInsets.fromLTRB(16, 20, 20, 8),
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
@@ -88,48 +109,53 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: Image.asset(
-                        'lib/assets/images/magnifer.png',
-                        width: 24,
-                        height: 24,
-                      ),
+                      icon: Image.asset('lib/assets/images/magnifer.png', width: 24, height: 24,),
                       onPressed: () => _handleSearch(_textController.text),
                     ),
                   ],
                 ),
               ),
             ),
-            // 3. 스크롤 가능한 영역을 Expanded로 감싸 남은 공간을 모두 차지하게 합니다.
+            // 스크롤 영역
             Expanded(
               child: ListView(
                 children: [
                   _buildSectionHeader('즐겨찾기'),
-                  // TODO: 실제 즐겨찾기 목록 데이터로 교체
-                  _buildListItem('즐겨찾기 항목 1'),
-                  _buildListItem('즐겨찾기 항목 2'),
+                  // === 수정된 부분: 즐겨찾기 목록을 ListView.builder로 표시 ===
+                  _favorites.isEmpty
+                      ? const Padding(
+                          padding: EdgeInsets.symmetric(vertical: 20.0),
+                          child: Center(child: Text('즐겨찾기 항목이 없습니다.')),
+                        )
+                      : ListView.separated(
+                          physics: const NeverScrollableScrollPhysics(),
+                          shrinkWrap: true,
+                          itemCount: _favorites.length,
+                          itemBuilder: (context, index) {
+                            final item = _favorites[index];
+                            return _buildFavoriteItem(item); // 새 헬퍼 위젯 사용
+                          },
+                          separatorBuilder: (context, index) => Divider(height: 1, color: AppColors.grayscale.s100),
+                        ),
+                  // ===============================================
 
-                  // 4. 최근 검색 섹션 헤더 (전체삭제 버튼 포함)
+                  // 기존 최근 검색 섹션
                   _buildSectionHeader('최근검색', onClearAll: _clearSearchHistory),
-                  // 5. 검색 기록이 없을 때와 있을 때를 구분하여 표시
                   _searchHistory.isEmpty
                       ? const Padding(
-                    padding: EdgeInsets.symmetric(vertical: 20.0),
-                    child: Center(child: Text('최근 검색 기록이 없습니다.')),
-                  )
+                          padding: EdgeInsets.symmetric(vertical: 20.0),
+                          child: Center(child: Text('최근 검색 기록이 없습니다.')),
+                        )
                       : ListView.separated(
-                    physics: const NeverScrollableScrollPhysics(), // 중첩 스크롤 방지
-                    shrinkWrap: true, // 컨텐츠 높이만큼만 차지
-                    itemCount: _searchHistory.length,
-                    itemBuilder: (context, index) {
-                      final term = _searchHistory[index];
-                      return _buildHistoryItem(term);
-                    },
-                    separatorBuilder: (context, index) => const Divider(
-                      height: 1,
-                      indent: 16,
-                      endIndent: 16,
-                    ),
-                  ),
+                          physics: const NeverScrollableScrollPhysics(),
+                          shrinkWrap: true,
+                          itemCount: _searchHistory.length,
+                          itemBuilder: (context, index) {
+                            final term = _searchHistory[index];
+                            return _buildHistoryItem(term);
+                          },
+                          separatorBuilder: (context, index) => Divider(height: 1, color: AppColors.grayscale.s100),
+                        ),
                 ],
               ),
             ),
@@ -141,10 +167,9 @@ class _SearchScreenState extends State<SearchScreen> {
 
   // --- UI 빌드 헬퍼 위젯 ---
 
-  // 섹션 헤더 (ex: 즐겨찾기, 최근검색)
   Widget _buildSectionHeader(String title, {VoidCallback? onClearAll}) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 36, 20, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -165,37 +190,103 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // 최근 검색 기록 아이템
   Widget _buildHistoryItem(String term) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-      title: Text(term, style: AppTextStyles.body2_1),
+    return InkWell(
       onTap: () {
         _textController.text = term;
-        // 커서를 텍스트 뒤로 이동
         _textController.selection = TextSelection.fromPosition(TextPosition(offset: _textController.text.length));
         _handleSearch(term);
       },
-      trailing: IconButton(
-        icon: Icon(Icons.close, color: AppColors.grayscale.s300, size: 20),
-        onPressed: () => _removeSearchTerm(term),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(term, style: AppTextStyles.body2_1),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => _removeSearchTerm(term),
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Icon(Icons.close, color: AppColors.grayscale.s300, size: 20),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 
-  // 즐겨찾기 등 일반 리스트 아이템 (삭제 버튼 없음)
-  Widget _buildListItem(String title) {
-    return Column(
-      children: [
-        ListTile(
-          contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-          title: Text(title, style: AppTextStyles.body2_1),
-          onTap: () {
-            // TODO: 즐겨찾기 항목 클릭 시 동작
-          },
+  // === 새로 추가된 위젯: 즐겨찾기 항목 ===
+  Widget _buildFavoriteItem(Favorite item) {
+    String title = '';
+    String subtitle = '';
+    IconData iconData = Icons.star; // 기본 아이콘
+
+    if (item is PlaceFavorite) {
+      title = item.name;
+      subtitle = item.address;
+      switch (item.category) {
+        case PlaceCategory.home:
+          iconData = Icons.home_outlined;
+          break;
+        case PlaceCategory.work:
+          iconData = Icons.work_outline;
+          break;
+        default:
+          iconData = Icons.location_on_outlined;
+      }
+    } else if (item is BusFavorite) {
+      title = item.name;
+      subtitle = '버스 번호: ${item.busNumber}';
+      iconData = Icons.directions_bus;
+    } else if (item is BusStopFavorite) {
+      title = item.stationName;
+      subtitle = '정류장 번호: ${item.stationId}';
+      iconData = Icons.pin_drop_outlined;
+    }
+
+    return InkWell(
+      onTap: () {
+        // TODO: 즐겨찾기 항목 클릭 시 동작 (예: 해당 위치로 지도 이동)
+        print('Tapped on favorite: ${item.name}');
+      },
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+        child: Row(
+          children: [
+            Icon(iconData, color: AppColors.grayscale.s500, size: 24),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  Text(title, style: AppTextStyles.body1_1),
+                  if (subtitle.isNotEmpty)
+                    Padding(
+                      padding: const EdgeInsets.only(top: 2.0),
+                      child: Text(
+                        subtitle,
+                        style: AppTextStyles.body2_1.copyWith(color: AppColors.grayscale.s600),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            GestureDetector(
+              onTap: () => _deleteFavorite(item.id),
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Icon(Icons.close, color: AppColors.grayscale.s300, size: 20),
+              ),
+            ),
+          ],
         ),
-        const Divider(height: 1, indent: 16, endIndent: 16),
-      ],
+      ),
     );
   }
 }

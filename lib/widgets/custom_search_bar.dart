@@ -35,11 +35,7 @@ class CustomSearchBar extends StatelessWidget {
               '검색',
               style: AppTextStyles.body2_1.copyWith(color: AppColors.grayscale.s500),
             ),
-            Image.asset(
-              'lib/assets/images/magnifer.png', // 이미지 파일 경로
-              width: 24,
-              height: 24,
-            ),
+            Image.asset('lib/assets/images/magnifer.png', width: 24,height: 24,),
           ],
         ),
       ),
