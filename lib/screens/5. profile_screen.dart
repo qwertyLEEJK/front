@@ -13,38 +13,37 @@ class _ProfileScreenState extends State<ProfileScreen> {
   // 0=집/회사, 1=자주가는곳, 2=버스
   int selectedIndex = 0;
 
-  // (에셋 prefix, 라벨)  ex) lib/assets/images/home_selected.png / home_unselected.png
   final _menus = const [
     ("home", "집/회사"),
-    ("mappoint", "자주가는곳"),
+    ("mappointwave", "자주가는곳"),
     ("bus", "버스"),
   ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.grayscale.s30,
+      backgroundColor: Colors.white,
       body: SafeArea(
         child: Column(
           children: [
-            // ===== 상단 프로필 헤더 (기본 Icon 사용) =====
             const _ProfileHeader(),
-
-            
-            const Divider(height: 1, thickness: 0.3),
-            const SizedBox(height: 8),
-
-            // ===== 탭바 (좌측 20 들여쓰기, 탭 간격 36, 왼쪽 정렬) =====
-            Padding(
-              padding: const EdgeInsets.only(left: 20), // 좌측 여백 20
+            Container(
+              height: 60,
+              padding: const EdgeInsets.only(left: 20, right: 20),
+              decoration: BoxDecoration(
+                border: Border(
+                  top: BorderSide(color: AppColors.grayscale.s100, width: 1.0),
+                  bottom: BorderSide(color: AppColors.grayscale.s100, width: 1.0),
+                ),
+              ),
               child: Row(
-                mainAxisAlignment: MainAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: List.generate(_menus.length, (i) {
                   final item = _menus[i];
                   final isSelected = i == selectedIndex;
                   return Padding(
                     padding: EdgeInsets.only(
-                      right: i == _menus.length - 1 ? 0 : 36, // 마지막 탭 제외 36 간격
+                      right: i == _menus.length - 1 ? 0 : 36,
                     ),
                     child: _CategoryTab(
                       iconName: item.$1,
@@ -56,11 +55,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
                 }),
               ),
             ),
-
-            const SizedBox(height: 8),
-            const Divider(height: 1, thickness: 0.3),
-
-            // ===== 컨텐츠 =====
             Expanded(
               child: _buildContent(selectedIndex),
             ),
@@ -71,9 +65,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Widget _buildContent(int index) {
+    final currentIconName = _menus[index].$1;
     switch (index) {
       case 0:
-        // 집/회사
         return _FavoriteList(
           title: "즐겨찾기",
           items: const [
@@ -82,10 +76,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ("집", "대구광역시 00군 00"),
             ("회사", "대구광역시 00군 00"),
           ],
-          leadingIcon: Icons.home_rounded,
+          iconName: currentIconName, // 선택한 메뉴 정보 전달해 아이콘 변경시킴
         );
       case 1:
-        // 자주가는곳
         return _FavoriteList(
           title: "자주가는곳",
           items: const [
@@ -93,11 +86,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ("헬스장", "대구광역시 00구 00"),
             ("편의점", "대구광역시 00구 00"),
           ],
-          leadingIcon: Icons.place_rounded,
+          iconName: currentIconName,
         );
       case 2:
       default:
-        // 버스
         return _FavoriteList(
           title: "버스 정류장",
           items: const [
@@ -105,20 +97,20 @@ class _ProfileScreenState extends State<ProfileScreen> {
             ("정류장", "00-001 시청앞"),
             ("정류장", "00-002 대학로"),
           ],
-          leadingIcon: Icons.directions_bus_filled,
+          iconName: currentIconName,
         );
     }
   }
 }
 
-/// ===== 상단 프로필 헤더 (닉네임 + 편집, 오른쪽 종/설정) =====
+/// ===== 상단 프로필 헤더 (아이콘 버튼 간격 수정) =====
 class _ProfileHeader extends StatelessWidget {
   const _ProfileHeader();
 
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(16, 12, 8, 8),
+      padding: const EdgeInsets.fromLTRB(19, 20, 8, 8),
       child: Row(
         children: [
           CircleAvatar(
@@ -173,13 +165,13 @@ class _ProfileHeader extends StatelessWidget {
           ),
           const Spacer(),
           IconButton(
-            icon: const Icon(Icons.notifications_none),
+            icon: Image.asset('lib/assets/images/bell.png', width: 24, height: 24),
             onPressed: () {
               // 알림 페이지 이동
             },
           ),
           IconButton(
-            icon: const Icon(Icons.settings_outlined),
+            icon: Image.asset('lib/assets/images/settings.png', width: 24, height: 24),
             onPressed: () {
               // 설정 페이지 이동
             },
@@ -190,7 +182,7 @@ class _ProfileHeader extends StatelessWidget {
   }
 }
 
-/// ===== 탭 버튼 (에셋 아이콘 + isSelected, 밑줄 제거) =====
+/// ===== 탭 버튼 =====
 class _CategoryTab extends StatelessWidget {
   final String iconName;
   final String label;
@@ -210,110 +202,142 @@ class _CategoryTab extends StatelessWidget {
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.center, // 텍스트도 좌기준 정렬
-        children: [
-          Image.asset(
-            'lib/assets/images/${iconName}_${selected ? 'selected' : 'unselected'}.png',
-            width: 24,
-            height: 24,
-          ),
-          const SizedBox(height: 10),
-          Text(
-            label,
-            style: AppTextStyles.caption2_2.copyWith(color : textColor),
-          ),
-          // 밑줄 제거 (원하면 여기 SizedBox(height: 6) 등으로 여백만 추가)
-        ],
+      child: Container(
+        height: 50,
+        alignment: Alignment.center,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.center,
+          children: [
+            Image.asset(
+              'lib/assets/images/${iconName}_${selected ? 'selected' : 'unselected'}.png',
+              width: 24,
+              height: 24,
+            ),
+            const SizedBox(height: 2),
+            Text(
+              label,
+              style: AppTextStyles.caption2_2.copyWith(
+                color : textColor,
+                height: 1.4,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-/// ===== 리스트 공통 위젯 (섹션 타이틀 + 타일들) =====
+/// ===== 리스트 공통 위젯 =====
 class _FavoriteList extends StatelessWidget {
   final String title;
-  final List<(String, String)> items; // (왼쪽 작은 라벨, 메인 주소/이름)
-  final IconData leadingIcon;
+  final List<(String, String)> items;
+  final String iconName;
 
   const _FavoriteList({
     required this.title,
     required this.items,
-    required this.leadingIcon,
+    required this.iconName,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      children: [
-        // 섹션 타이틀
-        const SizedBox(height: 20),
-        Container(
-          width: double.infinity,
-          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-          child: Text(
-            title,
-            style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s900)
-          ),
-        ),
-        const SizedBox(height: 10),
-        const Divider(height: 1, thickness: 0.3),
+    return Container(
+      color: AppColors.grayscale.s30,
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
 
-        // 리스트
-        Expanded(
-          child: ListView.separated(
-            itemCount: items.length,
-            separatorBuilder: (_, __) => const Divider(height: 1, thickness: 0.3),
-            itemBuilder: (context, index) {
-              final (small, main) = items[index];
-              return ListTile(
-                leading: Image.asset(
-                  'lib/assets/images/home_selected.png',
-                  height: 24,
-                  width: 24,
-                  color: AppColors.grayscale.s900),
-                title: Text(
-                  main,
-                  style: AppTextStyles.body1_1.copyWith(color: AppColors.grayscale.s900),
-                ),
-                subtitle: Text(
-                  small,
-                  style: AppTextStyles.caption2_1.copyWith(color: AppColors.grayscale.s500),
-                ),
-                onTap: () {
-                  // 항목 터치 시 동작
-                },
-              );
-            },
+          // 섹션 타이틀
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 36, 20, 12),
+            child: Text(
+                title,
+                style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s900)
+            ),
           ),
-        ),
+          Divider(height: 1, thickness: 1, color: AppColors.grayscale.s100),
 
-        // 하단 버튼(예: 주소 등록하기)
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 8, 16, 16),
-          child: SizedBox(
-            width: double.infinity,
-            height: 44,
-            child: OutlinedButton(
-              style: OutlinedButton.styleFrom(
-                side: BorderSide(color: AppColors.grayscale.s30),
-                backgroundColor: AppColors.grayscale.s100,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(10),
-                ),
-              ),
-              onPressed: () {
-                // 등록 액션
+          // 리스트
+          Expanded(
+            child: ListView.builder(
+              padding: EdgeInsets.zero,
+              itemCount: items.length,
+              itemBuilder: (context, index) {
+                final (small, main) = items[index];
+                return Column(
+                  children: [
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 16),
+                      child: Row(
+                        children: [
+                          Image.asset(
+                            'lib/assets/images/${iconName}_selected.png',
+                            height: 24,
+                            width: 24,
+                            color: AppColors.grayscale.s900,
+                          ),
+                          const SizedBox(width: 16),
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
+                                Text(
+                                  small,
+                                  style: AppTextStyles.caption2_1.copyWith(
+                                    color: AppColors.grayscale.s500,
+                                    height: 1.4,
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  main,
+                                  style: AppTextStyles.body1_1.copyWith(
+                                    color: AppColors.grayscale.s900,
+                                    height: 1.4,
+                                  ),
+                                  overflow: TextOverflow.ellipsis,
+                                ),
+                              ],
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    Divider(height: 1, thickness: 1, color: AppColors.grayscale.s100),
+                  ],
+                );
               },
-              child: Text(
-                "주소 등록 하기",
-                style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s900),
+            ),
+          ),
+
+          // 하단 버튼
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 24, 16, 16),
+            child: SizedBox(
+              width: double.infinity,
+              height: 44,
+              child: OutlinedButton(
+                style: OutlinedButton.styleFrom(
+                  side: BorderSide(color: AppColors.grayscale.s200),
+                  backgroundColor: AppColors.grayscale.s100,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                ),
+                onPressed: () {
+                  // 등록 액션
+                },
+                child: Text(
+                  "주소 등록하기",
+                  style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s900),
+                ),
               ),
             ),
           ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 }
