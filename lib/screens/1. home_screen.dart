@@ -22,17 +22,17 @@ final List<Map<String, dynamic>> markerList = [
   {"x": 2154, "y": 830}, //8
   {"x": 2012, "y": 830}, //9
   {"x": 1870, "y": 830}, //10  ← 현재위치 스타일 + 방위 삼각형
-  {"x": 1668, "y": 830}, //11 (1698-30)
-  {"x": 1526, "y": 830}, //12 (1556-30)
-  {"x": 1384, "y": 830}, //13 (1414-30)
-  {"x": 1242, "y": 830}, //14 (1272-30)
-  {"x": 1100, "y": 830}, //15 (1130-30)
-  {"x": 958,  "y": 830}, //16 (988-30)
-  {"x": 816,  "y": 830}, //17 (846-30)
-  {"x": 674,  "y": 830}, //18 (704-30)
-  {"x": 532,  "y": 830}, //19 (562-30)
-  {"x": 390,  "y": 830}, //20 (420-30)
-  {"x": 238,  "y": 880}, //21 (278-30)
+  {"x": 1668, "y": 830}, //11
+  {"x": 1526, "y": 830}, //12
+  {"x": 1384, "y": 830}, //13
+  {"x": 1242, "y": 830}, //14
+  {"x": 1100, "y": 830}, //15
+  {"x": 958,  "y": 830}, //16
+  {"x": 816,  "y": 830}, //17
+  {"x": 674,  "y": 830}, //18
+  {"x": 532,  "y": 830}, //19
+  {"x": 390,  "y": 830}, //20
+  {"x": 238,  "y": 880}, //21
   {"x": 2777, "y": 730}, //22
   {"x": 2777, "y": 540}, //23
   {"x": 1800, "y": 755}, //24
@@ -207,13 +207,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  /// 버튼 누르면 10번 마커를 화면 중앙에 오도록 이동 (스케일 1.0)
-  void _centerOnMarker10() {
-    if (_lastViewportWidth == 0 || _lastViewportHeight == 0 || _lastImageWidth == 0 || _lastImageHeight == 0) {
+  /// 버튼 누르면 현재 마커를 화면 중앙에 오도록 이동 (스케일 1.0)
+  void _centerOnCurrentMarker() {
+    if (selectedPredictionIndex == null || _lastViewportWidth == 0 || _lastViewportHeight == 0 || _lastImageWidth == 0 || _lastImageHeight == 0) {
       return;
     }
 
-    final idx = markerApiValues.indexOf(10);
+    final idx = markerApiValues.indexOf(selectedPredictionIndex!);
     if (idx < 0 || idx >= markerList.length) return;
 
     final marker = markerList[idx];
@@ -235,11 +235,6 @@ class _HomeScreenState extends State<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text(
-          '캠퍼스 지도${selectedPredictionIndex != null ? ' (API값: $selectedPredictionIndex)' : ' (API값: $selectedPredictionIndex)'}',
-        ),
-      ),
       body: SafeArea(
         child: LayoutBuilder(
           builder: (context, constraints) {
@@ -289,8 +284,8 @@ class _HomeScreenState extends State<HomeScreen> {
                             final double scaledLeft = (mx / imageOriginWidth) * displayWidth;
                             final double scaledTop  = (my / imageOriginHeight) * displayHeight;
 
-                            final bool isTen = markerApiValue == 10;
-                            final double markerSize = isTen ? 56.0 : 16.0;
+                            final bool isCurrentLocation = selectedPredictionIndex != null && markerApiValue == selectedPredictionIndex;
+                            final double markerSize = isCurrentLocation ? 56.0 : 16.0;
 
                             return Positioned(
                               left: scaledLeft - (markerSize / 2),
@@ -298,7 +293,7 @@ class _HomeScreenState extends State<HomeScreen> {
                               child: GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () {
-                                  if (isTen) {
+                                  if (isCurrentLocation) {
                                     showModalBottomSheet(
                                       context: context,
                                       backgroundColor: Colors.transparent, // 뒷배경 어두워지는 효과 제거
@@ -316,7 +311,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                 child: Column(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    if (isTen)
+                                    if (isCurrentLocation)
                                       NaverCurrentLocationMarker(
                                         radius: 28,
                                         headingDeg: _headingDeg, // ← 방위 전달
@@ -330,7 +325,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   markerApiValue != null &&
                                                   selectedPredictionIndex == markerApiValue)
                                               ? Colors.blue
-                                              : AppColors.secondary.s900,
+                                              : Colors.transparent,
                                           shape: BoxShape.circle,
                                           border: Border.all(color: AppColors.grayscale.s30, width: 2),
                                         ),
@@ -370,7 +365,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   right: 16,
                   bottom: 16,
                   child: InkWell(
-                    onTap: _centerOnMarker10,
+                    onTap: _centerOnCurrentMarker,
                     borderRadius: BorderRadius.circular(32),
                     child: Container(
                       width: 52,
@@ -378,9 +373,9 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         color: AppColors.grayscale.s30,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.grayscale.s400)
+                        border: Border.all(color: AppColors.grayscale.s200)
                       ),
-                      padding: const EdgeInsets.all(10),
+                      padding: const EdgeInsets.all(15),
                       child: Image.asset(
                         'lib/assets/images/target.png',
                         fit: BoxFit.contain,
