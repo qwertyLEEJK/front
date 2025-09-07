@@ -43,7 +43,7 @@ class CustomBottomNavBar extends StatelessWidget {
               _buildNavItem(index: 0, label: '홈'),
               _buildNavItem(index: 1, label: '대중교통'),
               _buildNavItem(index: 2, label: '내주변'),
-              _buildNavItem(index: 3, label: '검색'),
+              _buildNavItem(index: 3, label: '길찾기'),
               _buildNavItem(index: 4, label: '내정보'),
             ],
           ),
@@ -58,7 +58,7 @@ class CustomBottomNavBar extends StatelessWidget {
       '홈': 'home',
       '대중교통': 'bus',
       '내주변': 'mappoint',
-      '검색': 'map',
+      '길찾기': 'map',
       '내정보': 'user',
     };
     final String iconName = labelToIconName[label] ?? 'home';
@@ -90,7 +90,7 @@ class CustomBottomNavBar extends StatelessWidget {
                   color: isSelected
                       ? AppColors.grayscale.s900
                       : AppColors.grayscale.s500,
-                  height: 1, // height를 1로 설정하여 Text 위젯 자체의 줄 높이를 12로 만듭니다.
+                  height: 1, // height를 1로 설정 (Text 위젯 자체의 높이를 12로 설정해주기 위함)
                 ),
                 maxLines: 1, // 한 줄만 표시
                 overflow: TextOverflow.ellipsis, // 글자가 넘칠 경우 ...으로 표시

@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:midas_project/theme/app_colors.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import '../widgets/custom_search_bar.dart';
 
 import '1. home_screen.dart';
 import '2. transport_screen.dart';
 import '3. map_screen.dart';
-import '4. search_screen.dart';
+import '4. search_screen.dart'; // 해당 스크린 기능 수정 필요
 import '5. profile_screen.dart';
 
 class MainScaffold extends StatefulWidget {
@@ -24,43 +25,41 @@ class _MainScaffoldState extends State<MainScaffold> {
     });
   }
 
-  // ✨ 이 부분이 수정되었습니다.
-  // 검색 탭(인덱스 3)과 내정보 탭(인덱스 4)에서 검색창 숨기기
-  bool get _showSearchBar => _currentIndex != 3 && _currentIndex != 4;
+  // 내정보 탭(인덱스 4)에서는 검색창 필요 X
+  bool get _showSearchBar => _currentIndex != 4;
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.grayscale.s30,
       bottomNavigationBar: CustomBottomNavBar(
         currentIndex: _currentIndex,
         onTap: _onTap,
       ),
       body: SafeArea(
-        child: Column(
+        child: Stack(
           children: [
-            if (_showSearchBar)
-              Padding(
-                padding: const EdgeInsets.only(
-                  top: 16.0,
-                  left: 20.0,
-                  right: 20.0,
-                ),
-                // CustomSearchBar를 파라미터 없이 호출합니다.
-                child: CustomSearchBar(),
-              ),
-            Expanded(
-              child: IndexedStack(
-                index: _currentIndex,
-                children: const [
-                  HomeScreen(),
-                  TransportScreen(),
-                  MapScreen(),
-                  SearchScreen(), // 자체 검색창을 가진 화면
-                  ProfileScreen(),
-                ],
-              ),
+            IndexedStack(
+              index: _currentIndex,
+              children: const [
+                HomeScreen(),
+                TransportScreen(),
+                MapScreen(),
+                SearchScreen(),
+                ProfileScreen(),
+              ],
             ),
+            if (_showSearchBar)
+              SafeArea(
+                child: Padding(
+                  padding: const EdgeInsets.only(
+                    top: 16.0,
+                    left: 20.0,
+                    right: 20.0,
+                  ),
+                  child: CustomSearchBar(), // 가짜 검색창 (누르면 검색 페이지로 이동)이니까 파라미터 필요 X
+                ),
+              ),
           ],
         ),
       ),

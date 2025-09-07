@@ -2,7 +2,6 @@ import 'package:flutter/material.dart';
 import 'package:midas_project/services/search_history_service.dart';
 import 'package:midas_project/theme/app_colors.dart';
 import 'package:midas_project/theme/app_theme.dart';
-import 'package:midas_project/widgets/custom_search_bar.dart'; // CustomSearchBar를 import 합니다.
 
 class SearchScreen extends StatefulWidget {
   const SearchScreen({super.key});
@@ -53,14 +52,14 @@ class _SearchScreenState extends State<SearchScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.grayscale.s30,
       // 1. 기존 AppBar를 제거하고 body에서 UI를 구성합니다.
       body: SafeArea(
         child: Column(
           children: [
             // 2. 검색창 UI를 직접 구성합니다.
             Padding(
-              padding: const EdgeInsets.only(top: 16.0, left: 20.0, right: 20.0, bottom: 8.0),
+              padding: const EdgeInsets.fromLTRB(16, 20, 20, 8),
               child: Container(
                 height: 48,
                 decoration: BoxDecoration(
@@ -88,11 +87,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: Image.asset(
-                        'lib/assets/images/magnifer.png',
-                        width: 24,
-                        height: 24,
-                      ),
+                      icon: Image.asset('lib/assets/images/magnifer.png', width: 24, height: 24,),
                       onPressed: () => _handleSearch(_textController.text),
                     ),
                   ],
@@ -104,9 +99,11 @@ class _SearchScreenState extends State<SearchScreen> {
               child: ListView(
                 children: [
                   _buildSectionHeader('즐겨찾기'),
-                  // TODO: 실제 즐겨찾기 목록 데이터로 교체
+                  // TODO: 서버에서 즐겨찾기 항목 데이터 불러오는 로직 추가
                   _buildListItem('즐겨찾기 항목 1'),
                   _buildListItem('즐겨찾기 항목 2'),
+                  _buildListItem('즐겨찾기 항목 3'),
+                  _buildListItem('즐겨찾기 항목 4'),
 
                   // 4. 최근 검색 섹션 헤더 (전체삭제 버튼 포함)
                   _buildSectionHeader('최근검색', onClearAll: _clearSearchHistory),
@@ -124,11 +121,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       final term = _searchHistory[index];
                       return _buildHistoryItem(term);
                     },
-                    separatorBuilder: (context, index) => const Divider(
-                      height: 1,
-                      indent: 16,
-                      endIndent: 16,
-                    ),
+                    separatorBuilder: (context, index) => Divider(height: 1, color: AppColors.grayscale.s100),
                   ),
                 ],
               ),
@@ -144,7 +137,7 @@ class _SearchScreenState extends State<SearchScreen> {
   // 섹션 헤더 (ex: 즐겨찾기, 최근검색)
   Widget _buildSectionHeader(String title, {VoidCallback? onClearAll}) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 24, 20, 8),
+      padding: const EdgeInsets.fromLTRB(20, 36, 20, 8),
       child: Row(
         mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
@@ -167,18 +160,31 @@ class _SearchScreenState extends State<SearchScreen> {
 
   // 최근 검색 기록 아이템
   Widget _buildHistoryItem(String term) {
-    return ListTile(
-      contentPadding: const EdgeInsets.symmetric(horizontal: 20),
-      title: Text(term, style: AppTextStyles.body2_1),
+    return InkWell(
       onTap: () {
         _textController.text = term;
         // 커서를 텍스트 뒤로 이동
         _textController.selection = TextSelection.fromPosition(TextPosition(offset: _textController.text.length));
         _handleSearch(term);
       },
-      trailing: IconButton(
-        icon: Icon(Icons.close, color: AppColors.grayscale.s300, size: 20),
-        onPressed: () => _removeSearchTerm(term),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
+        child: Row(
+          children: [
+            Expanded(
+              child: Text(term, style: AppTextStyles.body2_1),
+            ),
+            const SizedBox(width: 8), // 텍스트와 아이콘 사이 간격
+            GestureDetector(
+              onTap: () => _removeSearchTerm(term),
+              // 아이콘의 터치 영역을 넓히기 위해 패딩 추가
+              child: Padding(
+                padding: const EdgeInsets.all(4.0),
+                child: Icon(Icons.close, color: AppColors.grayscale.s300, size: 20),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -194,7 +200,7 @@ class _SearchScreenState extends State<SearchScreen> {
             // TODO: 즐겨찾기 항목 클릭 시 동작
           },
         ),
-        const Divider(height: 1, indent: 16, endIndent: 16),
+        Divider(height: 1, color: AppColors.grayscale.s100),
       ],
     );
   }
