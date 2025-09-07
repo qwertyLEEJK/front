@@ -33,6 +33,7 @@ class SlideUpCard extends StatelessWidget {
             ),
             SizedBox(height: 10),
             Text("경북 경산시 삼풍동 영남대학교 공과대학본관", style: AppTextStyles.body2_1.copyWith(color: AppColors.grayscale.s600)),
+            SizedBox(height: 16),
             Spacer(),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 6), // 18px → 6LP

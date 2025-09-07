@@ -1,7 +1,29 @@
 import 'package:flutter/material.dart';
-import 'package:midas_project/screens/place_info.dart'; // place_info.dart 파일 import
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
 
-void main() {
+import 'package:midas_project/screens/place_info.dart';
+import 'naver_map_screen.dart';
+
+Future<void> main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+
+  // 1) .env 로드
+  await dotenv.load(fileName: '.env');
+
+  // 2) 키 읽기
+  final clientId = dotenv.env['NAVER_MAPS_API_KEY'];
+  if (clientId == null || clientId.isEmpty) {
+    // 운영에서는 로깅/예외 처리로 교체
+    throw Exception('NAVER_MAPS_API_KEY 가 .env 에 없습니다.');
+  }
+
+  // 3) 네이버맵 초기화 (await 필수)
+  await NaverMapSdk.instance.initialize(
+    clientId: clientId,
+    onAuthFailed: (e) => debugPrint('NaverMap auth failed: $e'),
+  );
+
   runApp(const TestPlaceInfoApp());
 }
 
@@ -13,20 +35,19 @@ class TestPlaceInfoApp extends StatelessWidget {
     return MaterialApp(
       title: 'Place Info Test',
       debugShowCheckedModeBanner: false,
-      home: Scaffold( // Scaffold를 추가하여 기본적인 앱 구조를 제공
+      home: Scaffold(
         appBar: AppBar(title: const Text('Place Info Test')),
         body: Center(
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              Image.asset('lib/assets/images/star.png', width: 100, height: 100),
-              const SizedBox(height: 20),
-              SlideUpCard(
-                onClose: () {
-                  // 테스트를 위한 간단한 닫기 동작 (예: 콘솔 출력 또는 아무것도 안 함)
-                  print('SlideUpCard closed');
-                },
+              const SizedBox(
+                width: 300,
+                height: 300,
+                child: NaverMapScreen(),
               ),
+              const SizedBox(height: 20),
+              SlideUpCard(onClose: () => print('SlideUpCard closed')),
             ],
           ),
         ),

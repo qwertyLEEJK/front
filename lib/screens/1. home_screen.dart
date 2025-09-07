@@ -154,6 +154,7 @@ class HomeScreen extends StatefulWidget {
 class _HomeScreenState extends State<HomeScreen> {
   int? selectedPredictionIndex;
   Timer? _timer;
+  bool _isCardVisible = false;
 
   // InteractiveViewer 제어용
   final TransformationController _transformationController = TransformationController();
@@ -299,18 +300,9 @@ class _HomeScreenState extends State<HomeScreen> {
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () {
                                   if (isTen) {
-                                    showModalBottomSheet(
-                                      context: context,
-                                      backgroundColor: Colors.transparent, // 뒷배경 어두워지는 효과 제거
-                                      barrierColor: Colors.transparent, // 배경을 투명하게 하여 SlideUpCard의 둥근 모서리를 살림
-                                      builder: (builderContext) {
-                                        return SlideUpCard(
-                                          onClose: () {
-                                            Navigator.pop(builderContext);
-                                          },
-                                        );
-                                      },
-                                    );
+                                    setState(() {
+                                      _isCardVisible = true;
+                                    });
                                   }
                                 },
                                 child: Column(
@@ -388,6 +380,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     ),
                   ),
                 ),
+                if (_isCardVisible)
+                  Positioned(
+                    bottom: 0, // 타겟 버튼(52) + 여백(16*2) 만큼 위로 올림
+                    left: 0,
+                    right: 0,
+                    height: 227, // 높이를 227로 명시적으로 지정
+                    child: SlideUpCard(
+                      onClose: () {
+                        setState(() {
+                          _isCardVisible = false;
+                        });
+                      },
+                    ),
+                  ),
               ],
             );
           },
