@@ -13,12 +13,10 @@ class SearchScreen extends StatefulWidget {
 }
 
 class _SearchScreenState extends State<SearchScreen> {
-  // 기존 검색 기록 서비스
   final SearchHistoryService _searchHistoryService = SearchHistoryService();
   final TextEditingController _textController = TextEditingController();
   List<String> _searchHistory = [];
 
-  // 새로 추가된 즐겨찾기 서비스
   final FavoriteService _favoriteService = FavoriteService();
   List<Favorite> _favorites = [];
 
@@ -26,7 +24,7 @@ class _SearchScreenState extends State<SearchScreen> {
   void initState() {
     super.initState();
     _loadSearchHistory();
-    _loadFavorites(); // 즐겨찾기 목록 로드
+    _loadFavorites();
   }
 
   // --- 데이터 처리 로직 ---
@@ -57,19 +55,35 @@ class _SearchScreenState extends State<SearchScreen> {
     _loadSearchHistory();
   }
 
-  // 즐겨찾기 데이터 처리 로직
+  // 즐겨찾기 데이터 처리 로직 (예외 처리 추가)
   Future<void> _loadFavorites() async {
-    final favs = await _favoriteService.getFavorites();
-    if (mounted) {
-      setState(() {
-        _favorites = favs;
-      });
+    try {
+      final favs = await _favoriteService.getFavorites();
+      if (mounted) {
+        setState(() {
+          _favorites = favs;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('즐겨찾기 목록을 불러오는 데 실패했습니다: ${e.toString()}')),
+        );
+      }
     }
   }
 
   Future<void> _deleteFavorite(String id) async {
-    await _favoriteService.removeFavorite(id);
-    _loadFavorites();
+    try {
+      await _favoriteService.removeFavorite(id);
+      _loadFavorites();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('즐겨찾기 삭제에 실패했습니다: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   @override
@@ -121,7 +135,6 @@ class _SearchScreenState extends State<SearchScreen> {
               child: ListView(
                 children: [
                   _buildSectionHeader('즐겨찾기'),
-                  // === 수정된 부분: 즐겨찾기 목록을 ListView.builder로 표시 ===
                   _favorites.isEmpty
                       ? const Padding(
                           padding: EdgeInsets.symmetric(vertical: 20.0),
@@ -133,13 +146,10 @@ class _SearchScreenState extends State<SearchScreen> {
                           itemCount: _favorites.length,
                           itemBuilder: (context, index) {
                             final item = _favorites[index];
-                            return _buildFavoriteItem(item); // 새 헬퍼 위젯 사용
+                            return _buildFavoriteItem(item);
                           },
                           separatorBuilder: (context, index) => Divider(height: 1, color: AppColors.grayscale.s100),
                         ),
-                  // ===============================================
-
-                  // 기존 최근 검색 섹션
                   _buildSectionHeader('최근검색', onClearAll: _clearSearchHistory),
                   _searchHistory.isEmpty
                       ? const Padding(
@@ -218,32 +228,30 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // === 새로 추가된 위젯: 즐겨찾기 항목 ===
+  // 즐겨찾기 항목 위젯 (새로운 모델 구조에 맞게 수정)
   Widget _buildFavoriteItem(Favorite item) {
-    String title = '';
+    String title = item.name;
     String subtitle = '';
     IconData iconData = Icons.star; // 기본 아이콘
 
-    if (item is PlaceFavorite) {
-      title = item.name;
-      subtitle = item.address;
-      switch (item.category) {
-        case PlaceCategory.home:
+    if (item.type == FavoriteType.place) {
+      subtitle = item.address ?? '주소 정보 없음';
+      switch (item.placeCategory) {
+        case 'home':
           iconData = Icons.home_outlined;
           break;
-        case PlaceCategory.work:
+        case 'work':
           iconData = Icons.work_outline;
           break;
         default:
           iconData = Icons.location_on_outlined;
       }
-    } else if (item is BusFavorite) {
-      title = item.name;
-      subtitle = '버스 번호: ${item.busNumber}';
+    } else if (item.type == FavoriteType.bus) {
+      subtitle = '버스 번호: ${item.busNumber ?? '정보 없음'}';
       iconData = Icons.directions_bus;
-    } else if (item is BusStopFavorite) {
-      title = item.stationName;
-      subtitle = '정류장 번호: ${item.stationId}';
+    } else if (item.type == FavoriteType.busStop) {
+      title = item.stationName ?? '정류장 이름 없음';
+      subtitle = '정류장 번호: ${item.stationId ?? '정보 없음'}';
       iconData = Icons.pin_drop_outlined;
     }
 

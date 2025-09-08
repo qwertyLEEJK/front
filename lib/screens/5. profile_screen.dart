@@ -40,17 +40,34 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 
   Future<void> _loadFavorites() async {
-    final favorites = await _favoriteService.getFavorites();
-    if (mounted) {
-      setState(() {
-        _allFavorites = favorites;
-      });
+    try {
+      final favorites = await _favoriteService.getFavorites();
+      if (mounted) {
+        setState(() {
+          _allFavorites = favorites;
+        });
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('즐겨찾기 목록을 불러오는 데 실패했습니다: ${e.toString()}')),
+        );
+      }
     }
   }
 
   Future<void> _deleteFavorite(String id) async {
-    await _favoriteService.removeFavorite(id);
-    _loadFavorites();
+    try {
+      await _favoriteService.removeFavorite(id);
+      // 삭제 성공 후 목록을 다시 불러옴
+      _loadFavorites();
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('즐겨찾기 삭제에 실패했습니다: ${e.toString()}')),
+        );
+      }
+    }
   }
 
   Future<void> _loadUserName() async {
@@ -139,39 +156,33 @@ class _ProfileScreenState extends State<ProfileScreen> {
   Widget _buildContent(int index) {
     List<Favorite> filteredItems = [];
     String title = "";
-    String currentIconName = _menus[index].$1;
 
     switch (index) {
-      case 0:
+      case 0: // 집/회사
         title = "즐겨찾기";
-        filteredItems = _allFavorites
-            .whereType<PlaceFavorite>()
-            .where((fav) =>
-                fav.category == PlaceCategory.home ||
-                fav.category == PlaceCategory.work)
-            .toList();
+        filteredItems = _allFavorites.where((fav) {
+          return fav.type == FavoriteType.place &&
+              (fav.placeCategory == 'home' || fav.placeCategory == 'work');
+        }).toList();
         break;
-      case 1:
+      case 1: // 자주가는곳
         title = "자주가는곳";
-        filteredItems = _allFavorites
-            .whereType<PlaceFavorite>()
-            .where((fav) =>
-                fav.category != PlaceCategory.home &&
-                fav.category != PlaceCategory.work)
-            .toList();
+        filteredItems = _allFavorites.where((fav) {
+          return fav.type == FavoriteType.place &&
+              (fav.placeCategory != 'home' && fav.placeCategory != 'work');
+        }).toList();
         break;
-      case 2:
+      case 2: // 버스/정류장
       default:
         title = "버스/정류장";
-        filteredItems = _allFavorites
-            .where((fav) => fav is BusFavorite || fav is BusStopFavorite)
-            .toList();
+        filteredItems = _allFavorites.where((fav) {
+          return fav.type == FavoriteType.bus || fav.type == FavoriteType.busStop;
+        }).toList();
         break;
     }
     return _FavoriteList(
       title: title,
       items: filteredItems,
-      iconName: currentIconName,
       onDelete: _deleteFavorite,
     );
   }
@@ -312,13 +323,11 @@ class _CategoryTab extends StatelessWidget {
 class _FavoriteList extends StatelessWidget {
   final String title;
   final List<Favorite> items;
-  final String iconName;
   final Function(String) onDelete;
 
   const _FavoriteList({
     required this.title,
     required this.items,
-    required this.iconName,
     required this.onDelete,
   });
 
@@ -347,36 +356,29 @@ class _FavoriteList extends StatelessWidget {
               itemCount: items.length,
               itemBuilder: (context, index) {
                 final item = items[index];
-                String smallText = '';
+                String smallText = item.name;
                 String mainText = '';
-                String itemIconName;
+                String itemIconName = 'mappointwave'; // 기본 아이콘
 
-                if (item is PlaceFavorite) {
-                  smallText = item.name;
-                  mainText = item.address;
-                  itemIconName = (item.category == PlaceCategory.home ||
-                          item.category == PlaceCategory.work)
+                if (item.type == FavoriteType.place) {
+                  mainText = item.address ?? '주소 정보 없음';
+                  itemIconName = (item.placeCategory == 'home' ||
+                          item.placeCategory == 'work')
                       ? 'home'
                       : 'mappointwave';
-                } else if (item is BusFavorite) {
-                  smallText = item.name;
-                  mainText = item.busNumber;
+                } else if (item.type == FavoriteType.bus) {
+                  mainText = item.busNumber ?? '버스 번호 없음';
                   itemIconName = 'bus';
-                } else if (item is BusStopFavorite) {
-                  smallText = item.stationName;
-                  mainText = item.stationId;
+                } else if (item.type == FavoriteType.busStop) {
+                  smallText = item.stationName ?? '정류장 이름 없음';
+                  mainText = item.stationId ?? '정류장 번호 없음';
                   itemIconName = 'bus';
-                } else {
-                  smallText = '알 수 없음';
-                  mainText = '데이터 오류';
-                  itemIconName = 'mappointwave';
                 }
 
                 return Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(
-                          horizontal: 20, vertical: 12),
+                      padding: const EdgeInsets.fromLTRB(20, 12, 8, 12), // 피그마상에선 양 옆 간격 20이 맞는데 실제론 8로 조정한게 맞음 (왜지..?)
                       child: Row(
                         children: [
                           Image.asset(
