@@ -25,7 +25,9 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
+  geolocator: ^14.0.2
+  flutter_naver_map: ^1.4.1+1
+  flutter_dotenv: ^6.0.0
   # 중복된 패키지 정리
   cupertino_icons: ^1.0.8
   get: ^4.6.6
@@ -55,6 +57,7 @@ flutter:
     - lib/네이버.png
     - lib/assets/3map.png
     - lib/assets/fonts/
+    - .env
 
   fonts:
     - family: Pretendard
