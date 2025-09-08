@@ -1,4 +1,6 @@
 import 'dart:async';
+import 'dart:convert';
+import '../api/api_client.dart'; // http 대신 ApiClient를 import
 import '../models/favorite_model.dart';
 
 class FavoriteService {
@@ -6,25 +8,42 @@ class FavoriteService {
   factory FavoriteService() => _instance;
   FavoriteService._internal();
 
-  // 다양한 유형의 즐겨찾기를 모두 담는 리스트
-  final List<Favorite> _favorites = [
-    PlaceFavorite(id: 'place_home', name: '집', address: '우리집 주소', category: PlaceCategory.home),
-    PlaceFavorite(id: 'place_work', name: '회사', address: '경산북도 경산시 삼풍로 27 영남대학교경산캠퍼스 IT관', category: PlaceCategory.work),
-    BusFavorite(id: 'bus_609', name: '학교', busNumber: '609'),
-    BusStopFavorite(id: 'stop_12345', name: '영남대 정문', stationName: '영남대정문건너', stationId: '12345'),
-  ];
+  // ApiClient 인스턴스를 가져와 사용
+  final ApiClient _apiClient = ApiClient();
 
   Future<List<Favorite>> getFavorites() async {
-    return _favorites;
+    // ApiClient의 get 함수를 호출
+    final response = await _apiClient.get('/favorites/');
+
+    // 200번대 응답 코드는 모두 성공으로 간주
+    if (response.statusCode >= 200 && response.statusCode < 300) {
+      final List<dynamic> data = json.decode(utf8.decode(response.bodyBytes));
+      return data.map((json) => Favorite.fromJson(json)).toList();
+    } else {
+      throw Exception('Failed to load favorites. Status code: ${response.statusCode}');
+    }
   }
 
   Future<void> addFavorite(Favorite favorite) async {
-    if (!_favorites.any((f) => f.id == favorite.id)) {
-      _favorites.add(favorite);
+    // ApiClient의 post 함수를 호출
+    final response = await _apiClient.post(
+      '/favorites/',
+      body: favorite.toJson(),
+    );
+
+    // 200번대 응답 코드는 모두 성공으로 간주
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to add favorite. Status code: ${response.statusCode}');
     }
   }
 
   Future<void> removeFavorite(String favoriteId) async {
-    _favorites.removeWhere((f) => f.id == favoriteId);
+    // ApiClient의 delete 함수를 호출
+    final response = await _apiClient.delete('/favorites/$favoriteId');
+
+    // 200번대 응답 코드는 모두 성공으로 간주 (204 포함)
+    if (response.statusCode < 200 || response.statusCode >= 300) {
+      throw Exception('Failed to delete favorite. Status code: ${response.statusCode}');
+    }
   }
 }

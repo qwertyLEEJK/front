@@ -1,54 +1,60 @@
-// 장소의 종류를 구분하기 위한 열거형
-enum PlaceCategory { home, work, convenienceStore, school, etc }
-
-// 즐겨찾기의 최상위 종류를 구분하기 위한 열거형
+// 즐겨찾기의 종류를 구분하기 위한 열거형
 enum FavoriteType { place, bus, busStop }
 
-// 모든 즐겨찾기 유형의 기반이 되는 추상 클래스
-abstract class Favorite {
+// 서버 응답에 맞춘 단일 Favorite 클래스
+class Favorite {
   final String id;
   final FavoriteType type;
-  final String name; // 사용자가 지정하는 이름 (예: "우리 집", "판교 가는 버스")
+  final String name;
+  final String? address;
+  final String? placeCategory;
+  final String? busNumber;
+  final String? stationName;
+  final String? stationId;
 
-  Favorite({required this.id, required this.type, required this.name});
+  Favorite({
+    required this.id,
+    required this.type,
+    required this.name,
+    this.address,
+    this.placeCategory,
+    this.busNumber,
+    this.stationName,
+    this.stationId,
+  });
 
-  // 나중에 JSON 파싱을 위해 factory 생성자 추가
-  // (지금은 구현하지 않아도 되지만 구조상 넣어두는 것이 좋음)
-}
+  // 서버가 보내준 단일 JSON 객체를 Favorite 객체로 변환
+  factory Favorite.fromJson(Map<String, dynamic> json) {
+    return Favorite(
+      id: json['id'],
+      name: json['name'],
+      // 'type' 문자열을 enum 값으로 변환
+      type: FavoriteType.values.firstWhere(
+        (e) => e.name == json['type'],
+        orElse: () => throw Exception('Unknown type from server: ${json['type']}'),
+      ),
+      address: json['address'],
+      placeCategory: json['place_category'],
+      busNumber: json['bus_number'],
+      stationName: json['station_name'],
+      stationId: json['station_id'],
+    );
+  }
 
-// '장소' 유형의 즐겨찾기
-class PlaceFavorite extends Favorite {
-  final String address;
-  final PlaceCategory category;
-
-  PlaceFavorite({
-    required String id,
-    required String name,
-    required this.address,
-    required this.category,
-  }) : super(id: id, type: FavoriteType.place, name: name);
-}
-
-// '버스' 유형의 즐겨찾기
-class BusFavorite extends Favorite {
-  final String busNumber;
-
-  BusFavorite({
-    required String id,
-    required String name,
-    required this.busNumber,
-  }) : super(id: id, type: FavoriteType.bus, name: name);
-}
-
-// '정류장' 유형의 즐겨찾기
-class BusStopFavorite extends Favorite {
-  final String stationName; // 정류장 이름 (예: "영남대정문건너")
-  final String stationId;   // 정류장 고유 번호 (예: "12345")
-
-  BusStopFavorite({
-    required String id,
-    required String name,
-    required this.stationName,
-    required this.stationId,
-  }) : super(id: id, type: FavoriteType.busStop, name: name);
+  // 객체를 JSON으로 변환 (POST 요청 시 사용)
+  Map<String, dynamic> toJson() {
+    final Map<String, dynamic> data = {
+      'id': id,
+      'type': type.name,
+      'name': name,
+      'address': address,
+      'place_category': placeCategory,
+      'bus_number': busNumber,
+      'station_name': stationName,
+      'station_id': stationId,
+    };
+    // null인 필드는 JSON에 포함하지 않음
+    data.removeWhere((key, value) => value == null);
+    return data;
+  }
 }
