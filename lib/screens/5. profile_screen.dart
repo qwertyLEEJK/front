@@ -1,4 +1,7 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:http/http.dart' as http;
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:midas_project/models/favorite_model.dart';
 import 'package:midas_project/services/favorite_service.dart';
 import 'package:midas_project/theme/app_colors.dart';
@@ -24,10 +27,16 @@ class _ProfileScreenState extends State<ProfileScreen> {
     ("bus", "버스"),
   ];
 
+  // ---- 사용자 닉네임 로딩용 ----
+  static const String _baseUrl = "http://3.36.52.161:8000";
+  String? _userName;
+  bool _isLoadingName = true;
+
   @override
   void initState() {
     super.initState();
     _loadFavorites();
+    _loadUserName();
   }
 
   Future<void> _loadFavorites() async {
@@ -44,6 +53,42 @@ class _ProfileScreenState extends State<ProfileScreen> {
     _loadFavorites();
   }
 
+  Future<void> _loadUserName() async {
+    try {
+      const secure = FlutterSecureStorage();
+      final token = await secure.read(key: 'access_token');
+      if (token == null || token.isEmpty) {
+        if (mounted) setState(() => _isLoadingName = false);
+        return;
+      }
+
+      final res = await http.get(
+        Uri.parse("$_baseUrl/users/me"),
+        headers: {
+          "Authorization": "Bearer $token",
+          "Content-Type": "application/json",
+        },
+      );
+
+      if (!mounted) return;
+
+      if (res.statusCode == 200) {
+        final data = jsonDecode(res.body);
+        setState(() {
+          _userName = data['userName']?.toString();
+          _isLoadingName = false;
+        });
+      } else {
+        // 실패 시 플레이스홀더 유지
+        debugPrint("GET /users/me failed: ${res.statusCode} ${res.body}");
+        setState(() => _isLoadingName = false);
+      }
+    } catch (e) {
+      debugPrint("GET /users/me error: $e");
+      if (mounted) setState(() => _isLoadingName = false);
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -51,7 +96,9 @@ class _ProfileScreenState extends State<ProfileScreen> {
       body: SafeArea(
         child: Column(
           children: [
-            const _ProfileHeader(),
+            _ProfileHeader(
+              userName: _isLoadingName ? null : (_userName ?? '닉네임'),
+            ),
             Container(
               height: 60,
               padding: const EdgeInsets.only(left: 20, right: 20),
@@ -97,16 +144,28 @@ class _ProfileScreenState extends State<ProfileScreen> {
     switch (index) {
       case 0:
         title = "즐겨찾기";
-        filteredItems = _allFavorites.whereType<PlaceFavorite>().where((fav) => fav.category == PlaceCategory.home || fav.category == PlaceCategory.work).toList();
+        filteredItems = _allFavorites
+            .whereType<PlaceFavorite>()
+            .where((fav) =>
+                fav.category == PlaceCategory.home ||
+                fav.category == PlaceCategory.work)
+            .toList();
         break;
       case 1:
         title = "자주가는곳";
-        filteredItems = _allFavorites.whereType<PlaceFavorite>().where((fav) => fav.category != PlaceCategory.home && fav.category != PlaceCategory.work).toList();
+        filteredItems = _allFavorites
+            .whereType<PlaceFavorite>()
+            .where((fav) =>
+                fav.category != PlaceCategory.home &&
+                fav.category != PlaceCategory.work)
+            .toList();
         break;
       case 2:
       default:
         title = "버스/정류장";
-        filteredItems = _allFavorites.where((fav) => fav is BusFavorite || fav is BusStopFavorite).toList();
+        filteredItems = _allFavorites
+            .where((fav) => fav is BusFavorite || fav is BusStopFavorite)
+            .toList();
         break;
     }
     return _FavoriteList(
@@ -118,9 +177,10 @@ class _ProfileScreenState extends State<ProfileScreen> {
   }
 }
 
-/// ===== 상단 프로필 헤더 (아이콘 버튼 간격 수정) =====
+/// ===== 상단 프로필 헤더 =====
 class _ProfileHeader extends StatelessWidget {
-  const _ProfileHeader();
+  final String? userName;
+  const _ProfileHeader({this.userName});
 
   @override
   Widget build(BuildContext context) {
@@ -137,19 +197,21 @@ class _ProfileHeader extends StatelessWidget {
           Row(
             children: [
               Text(
-                '닉네임',
-                style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s900),
+                userName ?? '불러오는 중...',
+                style: AppTextStyles.title7
+                    .copyWith(color: AppColors.grayscale.s900),
               ),
               IconButton(
-                icon: Icon(Icons.edit, size: 18, color: AppColors.grayscale.s500),
+                icon:
+                    Icon(Icons.edit, size: 18, color: AppColors.grayscale.s500),
                 padding: EdgeInsets.zero,
                 constraints: const BoxConstraints(),
                 onPressed: () {
-                  // 닉네임 수정 다이얼로그
+                  // 닉네임 수정 다이얼로그 (서버 연동은 추후)
                   showDialog(
                     context: context,
                     builder: (ctx) {
-                      final controller = TextEditingController();
+                      final controller = TextEditingController(text: userName);
                       return AlertDialog(
                         title: const Text("닉네임 수정"),
                         content: TextField(
@@ -165,7 +227,7 @@ class _ProfileHeader extends StatelessWidget {
                           ),
                           TextButton(
                             onPressed: () {
-                              // TODO: 저장 로직
+                              // TODO: 서버에 닉네임 수정 API 연동
                               Navigator.pop(ctx);
                             },
                             child: const Text("확인"),
@@ -186,7 +248,8 @@ class _ProfileHeader extends StatelessWidget {
             },
           ),
           IconButton(
-            icon: Image.asset('lib/assets/images/settings.png', width: 24, height: 24),
+            icon:
+                Image.asset('lib/assets/images/settings.png', width: 24, height: 24),
             onPressed: () {
               // 설정 페이지 이동
             },
@@ -213,7 +276,8 @@ class _CategoryTab extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final textColor = selected ? AppColors.grayscale.s900 : AppColors.grayscale.s500;
+    final textColor =
+        selected ? AppColors.grayscale.s900 : AppColors.grayscale.s500;
     return GestureDetector(
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
@@ -233,7 +297,7 @@ class _CategoryTab extends StatelessWidget {
             Text(
               label,
               style: AppTextStyles.caption2_2.copyWith(
-                color : textColor,
+                color: textColor,
                 height: 1.4,
               ),
             ),
@@ -265,13 +329,13 @@ class _FavoriteList extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-
           // 섹션 타이틀
           Padding(
             padding: const EdgeInsets.fromLTRB(20, 36, 20, 12),
             child: Text(
-                title,
-                style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s900)
+              title,
+              style: AppTextStyles.title7
+                  .copyWith(color: AppColors.grayscale.s900),
             ),
           ),
           Divider(height: 1, thickness: 1, color: AppColors.grayscale.s100),
@@ -290,7 +354,10 @@ class _FavoriteList extends StatelessWidget {
                 if (item is PlaceFavorite) {
                   smallText = item.name;
                   mainText = item.address;
-                  itemIconName = (item.category == PlaceCategory.home || item.category == PlaceCategory.work) ? 'home' : 'mappointwave';
+                  itemIconName = (item.category == PlaceCategory.home ||
+                          item.category == PlaceCategory.work)
+                      ? 'home'
+                      : 'mappointwave';
                 } else if (item is BusFavorite) {
                   smallText = item.name;
                   mainText = item.busNumber;
@@ -300,7 +367,6 @@ class _FavoriteList extends StatelessWidget {
                   mainText = item.stationId;
                   itemIconName = 'bus';
                 } else {
-                  // Should not happen
                   smallText = '알 수 없음';
                   mainText = '데이터 오류';
                   itemIconName = 'mappointwave';
@@ -309,7 +375,8 @@ class _FavoriteList extends StatelessWidget {
                 return Column(
                   children: [
                     Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 12), // Adjusted vertical padding
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 20, vertical: 12),
                       child: Row(
                         children: [
                           Image.asset(
@@ -343,7 +410,8 @@ class _FavoriteList extends StatelessWidget {
                             ),
                           ),
                           IconButton(
-                            icon: Icon(Icons.close, color: AppColors.grayscale.s500, size: 20),
+                            icon: Icon(Icons.close,
+                                color: AppColors.grayscale.s500, size: 20),
                             onPressed: () => onDelete(item.id),
                             padding: EdgeInsets.zero,
                             constraints: const BoxConstraints(),
@@ -351,7 +419,10 @@ class _FavoriteList extends StatelessWidget {
                         ],
                       ),
                     ),
-                    Divider(height: 1, thickness: 1, color: AppColors.grayscale.s100),
+                    Divider(
+                        height: 1,
+                        thickness: 1,
+                        color: AppColors.grayscale.s100),
                   ],
                 );
               },
@@ -373,11 +444,12 @@ class _FavoriteList extends StatelessWidget {
                   ),
                 ),
                 onPressed: () {
-                  // 등록 액션
+                  // TODO: 주소 등록 화면 이동
                 },
                 child: Text(
                   "주소 등록하기",
-                  style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s900),
+                  style: AppTextStyles.title7
+                      .copyWith(color: AppColors.grayscale.s900),
                 ),
               ),
             ),

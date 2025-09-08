@@ -373,12 +373,16 @@ class _HomeScreenState extends State<HomeScreen> {
                       decoration: BoxDecoration(
                         color: AppColors.grayscale.s30,
                         shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.grayscale.s200)
+                        border: Border.all(color: AppColors.grayscale.s200),
                       ),
-                      padding: const EdgeInsets.all(15),
-                      child: Image.asset(
-                        'lib/assets/images/target.png',
-                        fit: BoxFit.contain,
+                      alignment: Alignment.center, // 정중앙 배치
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Image.asset(
+                          'lib/assets/images/target.png',
+                          fit: BoxFit.contain,
+                        ),
                       ),
                     ),
                   ),
