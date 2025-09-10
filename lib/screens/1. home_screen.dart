@@ -4,7 +4,7 @@ import 'package:get/get.dart';
 import 'package:midas_project/theme/app_colors.dart';
 import 'package:midas_project/theme/app_theme.dart';
 import '../function/sensor_controller.dart';
-import '../function/Predict_api.dart';
+import '../function/prediction_service.dart';
 import 'dart:collection'; // 주석 부분 때문에 필요한 패키지
 import 'package:flutter_compass/flutter_compass.dart';
 import 'dart:math' as math;
@@ -27,12 +27,12 @@ final List<Map<String, dynamic>> markerList = [
   {"x": 1384, "y": 830}, //13
   {"x": 1242, "y": 830}, //14
   {"x": 1100, "y": 830}, //15
-  {"x": 958,  "y": 830}, //16
-  {"x": 816,  "y": 830}, //17
-  {"x": 674,  "y": 830}, //18
-  {"x": 532,  "y": 830}, //19
-  {"x": 390,  "y": 830}, //20
-  {"x": 238,  "y": 880}, //21
+  {"x": 958, "y": 830}, //16
+  {"x": 816, "y": 830}, //17
+  {"x": 674, "y": 830}, //18
+  {"x": 532, "y": 830}, //19
+  {"x": 390, "y": 830}, //20
+  {"x": 238, "y": 880}, //21
   {"x": 2777, "y": 730}, //22
   {"x": 2777, "y": 540}, //23
   {"x": 1800, "y": 755}, //24
@@ -43,14 +43,41 @@ final List<Map<String, dynamic>> markerList = [
   {"x": 1800, "y": 1100}, //29
 ];
 
-
 final List<int> markerApiValues = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20, 21, 22, 23, 24, 25, 26, 27, 28, 29
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29
 ];
 
 // ===== (B) 네이버 현재위치 스타일 마커 위젯 (방위 삼각형 포함) =====
 class NaverCurrentLocationMarker extends StatelessWidget {
-  final double radius;     // 바깥 반경(정확도 원 크기 절반)
+  final double radius; // 바깥 반경(정확도 원 크기 절반)
   final double headingDeg; // 단말 방위(0° = 북쪽/위쪽)
 
   const NaverCurrentLocationMarker({
@@ -124,9 +151,9 @@ class _HeadingTrianglePainter extends CustomPainter {
 
     // === 크기 절반으로 축소 ===
     final Path tri = Path()
-      ..moveTo(w / 2, 0)              // 위 꼭짓점
-      ..lineTo(w * 0.25, h * 0.375)   // 좌측 하단 (원래 0, h*0.75 → 절반)
-      ..lineTo(w * 0.75, h * 0.375)   // 우측 하단 (원래 w, h*0.75 → 절반)
+      ..moveTo(w / 2, 0) // 위 꼭짓점
+      ..lineTo(w * 0.25, h * 0.375) // 좌측 하단 (원래 0, h*0.75 → 절반)
+      ..lineTo(w * 0.75, h * 0.375) // 우측 하단 (원래 w, h*0.75 → 절반)
       ..close();
 
     // 중심보다 살짝 위로 올리기 (값도 절반 정도로 줄임)
@@ -139,7 +166,6 @@ class _HeadingTrianglePainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
-
 
 const double imageOriginWidth = 3508;
 const double imageOriginHeight = 1422;
@@ -156,7 +182,8 @@ class _HomeScreenState extends State<HomeScreen> {
   Timer? _timer;
 
   // InteractiveViewer 제어용
-  final TransformationController _transformationController = TransformationController();
+  final TransformationController _transformationController =
+      TransformationController();
 
   // 레이아웃(뷰포트/이미지) 크기 저장
   double _lastViewportWidth = 0;
@@ -184,7 +211,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     fetchPredictionAndUpdateMarker();
-    _timer = Timer.periodic(const Duration(seconds: 2), (_) => fetchPredictionAndUpdateMarker());
+    _timer = Timer.periodic(
+        const Duration(seconds: 2), (_) => fetchPredictionAndUpdateMarker());
   }
 
   @override
@@ -209,7 +237,11 @@ class _HomeScreenState extends State<HomeScreen> {
 
   /// 버튼 누르면 현재 마커를 화면 중앙에 오도록 이동 (스케일 1.0)
   void _centerOnCurrentMarker() {
-    if (selectedPredictionIndex == null || _lastViewportWidth == 0 || _lastViewportHeight == 0 || _lastImageWidth == 0 || _lastImageHeight == 0) {
+    if (selectedPredictionIndex == null ||
+        _lastViewportWidth == 0 ||
+        _lastViewportHeight == 0 ||
+        _lastImageWidth == 0 ||
+        _lastImageHeight == 0) {
       return;
     }
 
@@ -221,11 +253,11 @@ class _HomeScreenState extends State<HomeScreen> {
     final double my = (marker['y'] as num).toDouble();
 
     final double scaledLeft = (mx / imageOriginWidth) * _lastImageWidth;
-    final double scaledTop  = (my / imageOriginHeight) * _lastImageHeight;
+    final double scaledTop = (my / imageOriginHeight) * _lastImageHeight;
 
     const double scale = 1.0;
-    final double tx = (_lastViewportWidth  / 2) - (scaledLeft * scale);
-    final double ty = (_lastViewportHeight / 2) - (scaledTop  * scale);
+    final double tx = (_lastViewportWidth / 2) - (scaledLeft * scale);
+    final double ty = (_lastViewportHeight / 2) - (scaledTop * scale);
 
     _transformationController.value = Matrix4.identity()
       ..translate(tx, ty)
@@ -240,7 +272,8 @@ class _HomeScreenState extends State<HomeScreen> {
           builder: (context, constraints) {
             // 화면(뷰포트) 높이에 맞춰 원본 비율로 지도 크기 산정
             final displayHeight = constraints.maxHeight;
-            final displayWidth = imageOriginWidth * (displayHeight / imageOriginHeight);
+            final displayWidth =
+                imageOriginWidth * (displayHeight / imageOriginHeight);
 
             // 뷰포트/이미지 크기 저장
             _lastViewportWidth = constraints.maxWidth;
@@ -276,28 +309,37 @@ class _HomeScreenState extends State<HomeScreen> {
                           ...markerList.asMap().entries.map((entry) {
                             final i = entry.key;
                             final marker = entry.value;
-                            final markerApiValue = (i < markerApiValues.length) ? markerApiValues[i] : null;
+                            final markerApiValue = (i < markerApiValues.length)
+                                ? markerApiValues[i]
+                                : null;
 
                             final double mx = (marker['x'] as num).toDouble();
                             final double my = (marker['y'] as num).toDouble();
 
-                            final double scaledLeft = (mx / imageOriginWidth) * displayWidth;
-                            final double scaledTop  = (my / imageOriginHeight) * displayHeight;
+                            final double scaledLeft =
+                                (mx / imageOriginWidth) * displayWidth;
+                            final double scaledTop =
+                                (my / imageOriginHeight) * displayHeight;
 
-                            final bool isCurrentLocation = selectedPredictionIndex != null && markerApiValue == selectedPredictionIndex;
-                            final double markerSize = isCurrentLocation ? 56.0 : 16.0;
+                            final bool isCurrentLocation =
+                                selectedPredictionIndex != null &&
+                                    markerApiValue == selectedPredictionIndex;
+                            final double markerSize =
+                                isCurrentLocation ? 56.0 : 16.0;
 
                             return Positioned(
                               left: scaledLeft - (markerSize / 2),
-                              top:  scaledTop  - (markerSize / 2),
+                              top: scaledTop - (markerSize / 2),
                               child: GestureDetector(
                                 behavior: HitTestBehavior.opaque,
                                 onTap: () {
                                   if (isCurrentLocation) {
                                     showModalBottomSheet(
                                       context: context,
-                                      backgroundColor: Colors.transparent, // 뒷배경 어두워지는 효과 제거
-                                      barrierColor: Colors.transparent, // 배경을 투명하게 하여 SlideUpCard의 둥근 모서리를 살림
+                                      backgroundColor:
+                                          Colors.transparent, // 뒷배경 어두워지는 효과 제거
+                                      barrierColor: Colors
+                                          .transparent, // 배경을 투명하게 하여 SlideUpCard의 둥근 모서리를 살림
                                       builder: (builderContext) {
                                         return SlideUpCard(
                                           onClose: () {
@@ -321,13 +363,17 @@ class _HomeScreenState extends State<HomeScreen> {
                                         width: 16,
                                         height: 16,
                                         decoration: BoxDecoration(
-                                          color: (selectedPredictionIndex != null &&
+                                          color: (selectedPredictionIndex !=
+                                                      null &&
                                                   markerApiValue != null &&
-                                                  selectedPredictionIndex == markerApiValue)
+                                                  selectedPredictionIndex ==
+                                                      markerApiValue)
                                               ? Colors.blue
                                               : Colors.transparent,
                                           shape: BoxShape.circle,
-                                          border: Border.all(color: AppColors.grayscale.s30, width: 2),
+                                          border: Border.all(
+                                              color: AppColors.grayscale.s30,
+                                              width: 2),
                                         ),
                                       ),
                                     const SizedBox(height: 2),
@@ -343,15 +389,17 @@ class _HomeScreenState extends State<HomeScreen> {
                             left: 8,
                             top: 8,
                             child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color: AppColors.grayscale.s900.withOpacity(0.6),
+                                color:
+                                    AppColors.grayscale.s900.withOpacity(0.6),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Text(
-                                'API값: ${selectedPredictionIndex ?? '-'}',
-                                style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s30)
-                              ),
+                                  'API값: ${selectedPredictionIndex ?? '-'}',
+                                  style: AppTextStyles.title7.copyWith(
+                                      color: AppColors.grayscale.s30)),
                             ),
                           ),
                         ],

@@ -4,7 +4,7 @@ import 'dart:math';
 import 'package:get/get.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:flutter_compass/flutter_compass.dart';
-import 'Predict_request.dart';
+import 'prediction_service.dart';
 
 class SensorData {
   double x, y, z;
