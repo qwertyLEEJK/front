@@ -2,10 +2,12 @@ import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+
 import 'package:midas_project/models/favorite_model.dart';
 import 'package:midas_project/services/favorite_service.dart';
 import 'package:midas_project/theme/app_colors.dart';
 import 'package:midas_project/theme/app_theme.dart';
+import 'auth_choice_screen.dart'; // ✅ 로그아웃 후 이동 화면
 
 class ProfileScreen extends StatefulWidget {
   const ProfileScreen({super.key});
@@ -96,7 +98,6 @@ class _ProfileScreenState extends State<ProfileScreen> {
           _isLoadingName = false;
         });
       } else {
-        // 실패 시 플레이스홀더 유지
         debugPrint("GET /users/me failed: ${res.statusCode} ${res.body}");
         setState(() => _isLoadingName = false);
       }
@@ -104,6 +105,46 @@ class _ProfileScreenState extends State<ProfileScreen> {
       debugPrint("GET /users/me error: $e");
       if (mounted) setState(() => _isLoadingName = false);
     }
+  }
+
+  // ===== 로그아웃 처리 =====
+  Future<void> _confirmLogout() async {
+    final shouldLogout = await showDialog<bool>(
+          context: context,
+          builder: (ctx) => AlertDialog(
+            title: const Text('로그아웃'),
+            content: const Text('로그아웃 하시겠습니까?'),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, false),
+                child: const Text('아니오'),
+              ),
+              TextButton(
+                onPressed: () => Navigator.pop(ctx, true),
+                child: const Text('예'),
+              ),
+            ],
+          ),
+        ) ??
+        false;
+
+    if (shouldLogout) {
+      await _logout();
+    }
+  }
+
+  Future<void> _logout() async {
+    const secure = FlutterSecureStorage();
+    // 저장된 토큰 제거
+    await secure.delete(key: 'access_token');
+    await secure.delete(key: 'token_type');
+
+    if (!mounted) return;
+    // 스택 비우고 로그인/회원가입 선택 화면으로
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const AuthChoiceScreen()),
+      (_) => false,
+    );
   }
 
   @override
@@ -115,6 +156,7 @@ class _ProfileScreenState extends State<ProfileScreen> {
           children: [
             _ProfileHeader(
               userName: _isLoadingName ? null : (_userName ?? '닉네임'),
+              onTapSettings: _confirmLogout, // ✅ 설정 아이콘 → 로그아웃 확인
             ),
             Container(
               height: 60,
@@ -191,7 +233,11 @@ class _ProfileScreenState extends State<ProfileScreen> {
 /// ===== 상단 프로필 헤더 =====
 class _ProfileHeader extends StatelessWidget {
   final String? userName;
-  const _ProfileHeader({this.userName});
+  final VoidCallback onTapSettings; // ✅ 설정 아이콘 콜백
+  const _ProfileHeader({
+    this.userName,
+    required this.onTapSettings,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -255,15 +301,12 @@ class _ProfileHeader extends StatelessWidget {
           IconButton(
             icon: Image.asset('lib/assets/images/bell.png', width: 24, height: 24),
             onPressed: () {
-              // 알림 페이지 이동
+              // 알림 페이지 이동 (필요 시 구현)
             },
           ),
           IconButton(
-            icon:
-                Image.asset('lib/assets/images/settings.png', width: 24, height: 24),
-            onPressed: () {
-              // 설정 페이지 이동
-            },
+            icon: Image.asset('lib/assets/images/settings.png', width: 24, height: 24),
+            onPressed: onTapSettings, // ✅ 로그아웃 확인 다이얼로그
           ),
         ],
       ),
@@ -422,9 +465,10 @@ class _FavoriteList extends StatelessWidget {
                       ),
                     ),
                     Divider(
-                        height: 1,
-                        thickness: 1,
-                        color: AppColors.grayscale.s100),
+                      height: 1,
+                      thickness: 1,
+                      color: AppColors.grayscale.s100,
+                    ),
                   ],
                 );
               },
