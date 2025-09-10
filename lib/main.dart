@@ -1,8 +1,6 @@
-import 'dart:convert';
 import 'package:flutter/material.dart';
-import 'package:http/http.dart' as http;
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
-
+import 'package:midas_project/api/api_client.dart';
 import 'package:midas_project/theme/app_theme.dart';
 import 'screens/auth_choice_screen.dart';         // 로그인/회원가입 선택 화면
 import 'screens/main_scaffold.dart';                      // ✅ 홈: MainScaffold 로 이동
@@ -43,8 +41,8 @@ class AuthGate extends StatefulWidget {
 }
 
 class _AuthGateState extends State<AuthGate> {
-  static const _baseUrl = "http://3.36.52.161:8000";
   final _secure = const FlutterSecureStorage();
+  final ApiClient _apiClient = ApiClient();
 
   @override
   void initState() {
@@ -54,24 +52,8 @@ class _AuthGateState extends State<AuthGate> {
 
   Future<void> _bootstrap() async {
     try {
-      final token = await _secure.read(key: 'access_token');
-      final rawType = await _secure.read(key: 'token_type') ?? 'Bearer';
-      // 서버가 'bearer'로 준 경우를 위해 헤더 표기 통일
-      final type = (rawType.toLowerCase() == 'bearer') ? 'Bearer' : rawType;
-
-      if (token == null || token.isEmpty) {
-        _go(const AuthChoiceScreen());
-        return;
-      }
-
       // 토큰 유효성 체크
-      final res = await http.get(
-        Uri.parse("$_baseUrl/users/me"),
-        headers: {
-          "Authorization": "$type $token",
-          "Content-Type": "application/json",
-        },
-      );
+      final res = await _apiClient.get("/users/me");
 
       if (!mounted) return;
 
@@ -85,6 +67,8 @@ class _AuthGateState extends State<AuthGate> {
       }
     } catch (e) {
       if (!mounted) return;
+      await _secure.delete(key: 'access_token'); // 무효 → 토큰 정리
+      await _secure.delete(key: 'token_type');
       _go(const AuthChoiceScreen());
     }
   }

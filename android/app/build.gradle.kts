@@ -24,11 +24,12 @@ android {
         applicationId = "com.example.midas_project"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
-                minSdk = flutter.minSdkVersion
+                minSdk = 23
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
         manifestPlaceholders["kakao_native_app_key"] = "d3d5da14ab19ade1029f19a41f04e173"
+        
     }
 
     buildTypes {

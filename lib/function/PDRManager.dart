@@ -3,7 +3,7 @@ import 'dart:math';
 /// 📌 PDRManager
 /// - 걸음 검출 (가속도 threshold + peak/trough 방식)
 /// - 보폭 추정 (Weinberg 공식)
-/// - Δx, Δy 좌표 누적
+/// - Δx, Δy 좌표 누적 (East=+X, North=+Y)
 class PDRManager {
   // 내부 상태
   int stepCount = 0;
@@ -33,11 +33,9 @@ class PDRManager {
   /// headingDeg: 현재 heading (deg, 0=North, 시계방향 증가)
   /// timestampMs: 현재 시간 (ms)
   void update(double accelMag, double headingDeg, int timestampMs) {
-    // 걸음 검출
     final step = _detectStep(accelMag, timestampMs);
 
     if (step != null) {
-      // 보폭 추정
       final stepLength = _estimateStepLength(step['delta']);
       lastStepLength = stepLength;
       stepCount++;

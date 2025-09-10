@@ -4,7 +4,9 @@ import 'dart:math';
 import 'package:get/get.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:flutter_compass/flutter_compass.dart';
-import 'prediction_service.dart';
+
+import 'PDRManager.dart';           // ✅ 외부 파일 사용
+import 'prediction_service.dart';  // PredictRequest/PredictApi
 
 /// ----------------------
 /// 센서 데이터 모델
@@ -24,95 +26,6 @@ class SensorData {
 }
 
 /// ----------------------
-/// PDR Manager
-/// ----------------------
-class PDRManager {
-  int stepCount = 0;
-  double lastStepLength = 0.0;
-  double posX = 0.0; // East
-  double posY = 0.0; // North
-
-  final double accelThreshold;
-  final int minStepIntervalMs;
-  final double weinbergK;
-
-  double? _lastPeak;
-  double? _lastTrough;
-  bool _waitingForTrough = false;
-  int _lastStepMs = 0;
-
-  PDRManager({
-    this.accelThreshold = 1.2,
-    this.minStepIntervalMs = 250,
-    this.weinbergK = 0.41,
-  });
-
-  void update(double accelMag, double headingDeg, int timestampMs) {
-    final step = _detectStep(accelMag, timestampMs);
-
-    if (step != null) {
-      final stepLength = _estimateStepLength(step['delta']);
-      lastStepLength = stepLength;
-      stepCount++;
-
-      final rad = headingDeg * pi / 180.0;
-      final dx = stepLength * sin(rad);
-      final dy = stepLength * cos(rad);
-      posX += dx;
-      posY += dy;
-    }
-  }
-
-  Map<String, dynamic>? _detectStep(double accelMag, int timestampMs) {
-    if (timestampMs - _lastStepMs < minStepIntervalMs) return null;
-
-    if (_lastPeak == null || accelMag > _lastPeak!) _lastPeak = accelMag;
-    if (_lastTrough == null || accelMag < _lastTrough!) _lastTrough = accelMag;
-
-    if (!_waitingForTrough) {
-      if (_lastPeak! > accelThreshold) {
-        _waitingForTrough = true;
-      }
-    } else {
-      if ((_lastPeak! - _lastTrough!) > 0.8) {
-        final delta = _lastPeak! - _lastTrough!;
-        _lastStepMs = timestampMs;
-        _waitingForTrough = false;
-        final step = {'delta': delta};
-        _lastPeak = null;
-        _lastTrough = null;
-        return step;
-      }
-    }
-    return null;
-  }
-
-  double _estimateStepLength(double delta) {
-    return weinbergK * pow(delta, 0.25);
-  }
-
-  Map<String, dynamic> getState() {
-    return {
-      'stepCount': stepCount,
-      'lastStepLength': lastStepLength,
-      'posX': posX,
-      'posY': posY,
-    };
-  }
-
-  void reset() {
-    stepCount = 0;
-    lastStepLength = 0.0;
-    posX = 0.0;
-    posY = 0.0;
-    _lastPeak = null;
-    _lastTrough = null;
-    _waitingForTrough = false;
-    _lastStepMs = 0;
-  }
-}
-
-/// ----------------------
 /// Sensor Controller
 /// ----------------------
 class SensorController extends GetxController {
@@ -124,9 +37,9 @@ class SensorController extends GetxController {
   late StreamSubscription<AccelerometerEvent> _accelSub;
   late StreamSubscription<MagnetometerEvent> _magSub;
   late StreamSubscription<GyroscopeEvent> _gyroSub;
-  late StreamSubscription<CompassEvent> _compassSub;
+  StreamSubscription<CompassEvent>? _compassSub;
 
-  // ✅ PDR 추가
+  // ✅ PDR
   final PDRManager pdr = PDRManager();
 
   @override
@@ -170,7 +83,7 @@ class SensorController extends GetxController {
       });
     });
 
-    _compassSub = FlutterCompass.events!.listen((event) {
+    _compassSub = FlutterCompass.events?.listen((event) {
       final headingVal = event.heading ?? 0;
       direction.value = headingVal;
       accelerometer.update((data) {
@@ -186,7 +99,7 @@ class SensorController extends GetxController {
     _accelSub.cancel();
     _magSub.cancel();
     _gyroSub.cancel();
-    _compassSub.cancel();
+    _compassSub?.cancel();
     super.onClose();
   }
 
@@ -216,13 +129,12 @@ class SensorController extends GetxController {
     });
   }
 
-  /// ✅ PredictRequest에 PDR 값 포함
+  /// ✅ 서버 요청에 넣을 센서+PDR 스냅샷
   PredictRequest getCurrentSensorValues() {
     final mag = magnetometer.value;
     final azimuth = direction.value;
     final pitch = accelerometer.value.pitch * 180 / pi;
     final roll = accelerometer.value.roll * 180 / pi;
-    
 
     final state = pdr.getState();
 
