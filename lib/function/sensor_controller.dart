@@ -6,6 +6,9 @@ import 'package:sensors_plus/sensors_plus.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'prediction_service.dart';
 
+/// ----------------------
+/// 센서 데이터 모델
+/// ----------------------
 class SensorData {
   double x, y, z;
   double pitch, roll, heading;
@@ -20,6 +23,98 @@ class SensorData {
   });
 }
 
+/// ----------------------
+/// PDR Manager
+/// ----------------------
+class PDRManager {
+  int stepCount = 0;
+  double lastStepLength = 0.0;
+  double posX = 0.0; // East
+  double posY = 0.0; // North
+
+  final double accelThreshold;
+  final int minStepIntervalMs;
+  final double weinbergK;
+
+  double? _lastPeak;
+  double? _lastTrough;
+  bool _waitingForTrough = false;
+  int _lastStepMs = 0;
+
+  PDRManager({
+    this.accelThreshold = 1.2,
+    this.minStepIntervalMs = 250,
+    this.weinbergK = 0.41,
+  });
+
+  void update(double accelMag, double headingDeg, int timestampMs) {
+    final step = _detectStep(accelMag, timestampMs);
+
+    if (step != null) {
+      final stepLength = _estimateStepLength(step['delta']);
+      lastStepLength = stepLength;
+      stepCount++;
+
+      final rad = headingDeg * pi / 180.0;
+      final dx = stepLength * sin(rad);
+      final dy = stepLength * cos(rad);
+      posX += dx;
+      posY += dy;
+    }
+  }
+
+  Map<String, dynamic>? _detectStep(double accelMag, int timestampMs) {
+    if (timestampMs - _lastStepMs < minStepIntervalMs) return null;
+
+    if (_lastPeak == null || accelMag > _lastPeak!) _lastPeak = accelMag;
+    if (_lastTrough == null || accelMag < _lastTrough!) _lastTrough = accelMag;
+
+    if (!_waitingForTrough) {
+      if (_lastPeak! > accelThreshold) {
+        _waitingForTrough = true;
+      }
+    } else {
+      if ((_lastPeak! - _lastTrough!) > 0.8) {
+        final delta = _lastPeak! - _lastTrough!;
+        _lastStepMs = timestampMs;
+        _waitingForTrough = false;
+        final step = {'delta': delta};
+        _lastPeak = null;
+        _lastTrough = null;
+        return step;
+      }
+    }
+    return null;
+  }
+
+  double _estimateStepLength(double delta) {
+    return weinbergK * pow(delta, 0.25);
+  }
+
+  Map<String, dynamic> getState() {
+    return {
+      'stepCount': stepCount,
+      'lastStepLength': lastStepLength,
+      'posX': posX,
+      'posY': posY,
+    };
+  }
+
+  void reset() {
+    stepCount = 0;
+    lastStepLength = 0.0;
+    posX = 0.0;
+    posY = 0.0;
+    _lastPeak = null;
+    _lastTrough = null;
+    _waitingForTrough = false;
+    _lastStepMs = 0;
+  }
+}
+
+/// ----------------------
+/// Sensor Controller
+/// ----------------------
 class SensorController extends GetxController {
   var accelerometer = SensorData(0, 0, 0).obs;
   var magnetometer = SensorData(0, 0, 0).obs;
@@ -30,6 +125,9 @@ class SensorController extends GetxController {
   late StreamSubscription<MagnetometerEvent> _magSub;
   late StreamSubscription<GyroscopeEvent> _gyroSub;
   late StreamSubscription<CompassEvent> _compassSub;
+
+  // ✅ PDR 추가
+  final PDRManager pdr = PDRManager();
 
   @override
   void onInit() {
@@ -44,6 +142,12 @@ class SensorController extends GetxController {
         }
       });
       _updatePitchRoll(event.x, event.y, event.z);
+
+      // PDR 업데이트
+      final accelMag =
+          sqrt(event.x * event.x + event.y * event.y + event.z * event.z) - 9.81;
+      final now = DateTime.now().millisecondsSinceEpoch;
+      pdr.update(accelMag.abs(), direction.value, now);
     });
 
     _magSub = magnetometerEvents.listen((event) {
@@ -86,17 +190,14 @@ class SensorController extends GetxController {
     super.onClose();
   }
 
-  /// 라디안 값을 -pi ~ pi로 정규화
   double normalize180(double rad) {
     while (rad <= -pi) rad += 2 * pi;
     while (rad > pi) rad -= 2 * pi;
     return rad;
   }
 
-  // Pitch, Roll 계산 (단위: 라디안)
   void _updatePitchRoll(double ax, double ay, double az) {
     final pitch = atan2(ay, az);
-
     double roll = atan2(-ax, sqrt(ay * ay + az * az));
     if (az < 0) {
       if (ay >= 0) {
@@ -105,7 +206,7 @@ class SensorController extends GetxController {
         roll = -pi - roll;
       }
     }
-    roll = normalize180(roll); // <- roll을 -pi ~ pi로 정규화
+    roll = normalize180(roll);
 
     accelerometer.update((data) {
       if (data != null) {
@@ -115,20 +216,27 @@ class SensorController extends GetxController {
     });
   }
 
-  // API가 요구하는 값에 맞춰서 현재 센서값을 PredictRequest로 반환 (실수값!)
+  /// ✅ PredictRequest에 PDR 값 포함
   PredictRequest getCurrentSensorValues() {
     final mag = magnetometer.value;
-    final azimuth = direction.value; // heading
-    final pitch = accelerometer.value.pitch * 180 / pi; // 라디안 → 도(°)
-    final roll = accelerometer.value.roll * 180 / pi;   // 라디안 → 도(°), -180~180 보장
+    final azimuth = direction.value;
+    final pitch = accelerometer.value.pitch * 180 / pi;
+    final roll = accelerometer.value.roll * 180 / pi;
+    
+
+    final state = pdr.getState();
 
     return PredictRequest(
       magX: mag.x,
       magY: mag.y,
       magZ: mag.z,
       oriAzimuth: azimuth,
-      oriPitch: -pitch, //pitch랑 roll 바뀌어서 그냥 바꿔서 적음
+      oriPitch: -pitch,
       oriRoll: roll,
+      pdrX: (state['posX'] as num).toDouble(),
+      pdrY: (state['posY'] as num).toDouble(),
+      stepCount: (state['stepCount'] as num).toInt(),
+      lastStepLength: (state['lastStepLength'] as num).toDouble(),
     );
   }
 }
