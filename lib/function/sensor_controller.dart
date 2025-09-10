@@ -58,7 +58,8 @@ class SensorController extends GetxController {
 
       // PDR 업데이트
       final accelMag =
-          sqrt(event.x * event.x + event.y * event.y + event.z * event.z) - 9.81;
+          sqrt(event.x * event.x + event.y * event.y + event.z * event.z) -
+              9.81;
       final now = DateTime.now().millisecondsSinceEpoch;
       pdr.update(accelMag.abs(), direction.value, now);
     });

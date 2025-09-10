@@ -1,8 +1,9 @@
 // lib/widgets/slide_up_card.dart
 import 'package:flutter/material.dart';
 import 'package:midas_project/theme/app_colors.dart';
-import 'package:midas_project/theme/app_theme.dart';  // 텍스트 스타일 테마 파일
+import 'package:midas_project/theme/app_theme.dart'; // 텍스트 스타일 테마 파일
 import 'package:midas_project/theme/app_colors.dart'; // 색상 테마 파일
+import '1. home_screen.dart';
 
 class SlideUpCard extends StatelessWidget {
   final VoidCallback onClose;
@@ -19,7 +20,8 @@ class SlideUpCard extends StatelessWidget {
         decoration: BoxDecoration(
           color: AppColors.grayscale.s30,
           borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-          border: Border(top: BorderSide(color:AppColors.grayscale.s100, width: 1)),
+          border: Border(
+              top: BorderSide(color: AppColors.grayscale.s100, width: 1)),
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -32,7 +34,9 @@ class SlideUpCard extends StatelessWidget {
               ],
             ),
             SizedBox(height: 10),
-            Text("경북 경산시 삼풍동 영남대학교 공과대학본관", style: AppTextStyles.body2_1.copyWith(color: AppColors.grayscale.s600)),
+            Text("경북 경산시 삼풍동 영남대학교 공과대학본관",
+                style: AppTextStyles.body2_1
+                    .copyWith(color: AppColors.grayscale.s600)),
             SizedBox(height: 16),
             Spacer(),
             Padding(
@@ -45,14 +49,15 @@ class SlideUpCard extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(
-                          elevation: 0,
-                          backgroundColor:AppColors.primary.s500,
-                          foregroundColor: AppColors.grayscale.s30,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          )
-                        ),
-                        child: Text("출발", style: AppTextStyles.body1_3.copyWith(color: AppColors.grayscale.s30)),
+                            elevation: 0,
+                            backgroundColor: AppColors.primary.s500,
+                            foregroundColor: AppColors.grayscale.s30,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            )),
+                        child: Text("출발",
+                            style: AppTextStyles.body1_3
+                                .copyWith(color: AppColors.grayscale.s30)),
                       ),
                     ),
                   ),
@@ -63,21 +68,21 @@ class SlideUpCard extends StatelessWidget {
                       child: ElevatedButton(
                         onPressed: () {},
                         style: ElevatedButton.styleFrom(
-                          elevation: 0,
-                          backgroundColor: AppColors.primary.s50,
-                          foregroundColor: AppColors.primary.s500,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          )
-                        ),
-                        child: Text("도착", style: AppTextStyles.body1_3.copyWith(color: AppColors.primary.s500)),
+                            elevation: 0,
+                            backgroundColor: AppColors.primary.s50,
+                            foregroundColor: AppColors.primary.s500,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            )),
+                        child: Text("도착",
+                            style: AppTextStyles.body1_3
+                                .copyWith(color: AppColors.primary.s500)),
                       ),
                     ),
                   ),
                 ],
               ),
-            )
-            ,
+            ),
             Center(
               child: IconButton(
                 icon: Icon(Icons.keyboard_arrow_down),

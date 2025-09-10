@@ -26,12 +26,12 @@ final List<Map<String, dynamic>> markerList = [
   {"x": 1384, "y": 830}, //13
   {"x": 1242, "y": 830}, //14
   {"x": 1100, "y": 830}, //15
-  {"x": 958,  "y": 830}, //16
-  {"x": 816,  "y": 830}, //17
-  {"x": 674,  "y": 830}, //18
-  {"x": 532,  "y": 830}, //19
-  {"x": 390,  "y": 830}, //20
-  {"x": 238,  "y": 880}, //21
+  {"x": 958, "y": 830}, //16
+  {"x": 816, "y": 830}, //17
+  {"x": 674, "y": 830}, //18
+  {"x": 532, "y": 830}, //19
+  {"x": 390, "y": 830}, //20
+  {"x": 238, "y": 880}, //21
   {"x": 2777, "y": 730}, //22
   {"x": 2777, "y": 540}, //23
   {"x": 1800, "y": 755}, //24
@@ -43,35 +43,74 @@ final List<Map<String, dynamic>> markerList = [
 ];
 
 final List<int> markerApiValues = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-  11,12,13,14,15,16,17,18,19,20,
-  21,22,23,24,25,26,27,28,29
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29
 ];
 
 // ===== 네이버 현재위치 스타일 마커 =====
 class NaverCurrentLocationMarker extends StatelessWidget {
   final double radius;
   final double headingDeg;
-  const NaverCurrentLocationMarker({super.key, this.radius = 28, this.headingDeg = 0});
+  const NaverCurrentLocationMarker(
+      {super.key, this.radius = 28, this.headingDeg = 0});
   @override
   Widget build(BuildContext context) {
     final double size = radius * 2;
     return SizedBox(
-      width: size, height: size,
+      width: size,
+      height: size,
       child: Stack(alignment: Alignment.center, children: [
         Container(
-          width: size, height: size,
-          decoration: BoxDecoration(color: AppColors.secondary.s800.withOpacity(0.2), shape: BoxShape.circle),
+          width: size,
+          height: size,
+          decoration: BoxDecoration(
+              color: AppColors.secondary.s800.withOpacity(0.2),
+              shape: BoxShape.circle),
         ),
         Transform.rotate(
           angle: (headingDeg + 180) * math.pi / 180.0,
-          child: CustomPaint(size: const Size(20, 20), painter: _HeadingTrianglePainter()),
+          child: CustomPaint(
+              size: const Size(20, 20), painter: _HeadingTrianglePainter()),
         ),
         Container(
-          width: 18, height: 18,
-          decoration: BoxDecoration(shape: BoxShape.circle, border: Border.all(color: AppColors.grayscale.s30, width: 2)),
+          width: 18,
+          height: 18,
+          decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              border: Border.all(color: AppColors.grayscale.s30, width: 2)),
         ),
-        Container(width: 10, height: 10, decoration: BoxDecoration(color: AppColors.secondary.s800, shape: BoxShape.circle)),
+        Container(
+            width: 10,
+            height: 10,
+            decoration: BoxDecoration(
+                color: AppColors.secondary.s800, shape: BoxShape.circle)),
       ]),
     );
   }
@@ -81,19 +120,26 @@ class _HeadingTrianglePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final Paint fill = Paint()..color = AppColors.secondary.s800;
-    final Paint stroke = Paint()..color = AppColors.secondary.s800..style = PaintingStyle.stroke..strokeWidth = 0.5;
+    final Paint stroke = Paint()
+      ..color = AppColors.secondary.s800
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = 0.5;
     final double w = size.width, h = size.height;
     final Path tri = Path()
-      ..moveTo(w / 2, 0)..lineTo(w * 0.25, h * 0.375)..lineTo(w * 0.75, h * 0.375)..close();
+      ..moveTo(w / 2, 0)
+      ..lineTo(w * 0.25, h * 0.375)
+      ..lineTo(w * 0.75, h * 0.375)
+      ..close();
     canvas.translate(0, -7);
     canvas.drawPath(tri, fill);
     canvas.drawPath(tri, stroke);
   }
+
   @override
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-const double imageOriginWidth  = 3508;
+const double imageOriginWidth = 3508;
 const double imageOriginHeight = 1422;
 
 class HomeScreen extends StatefulWidget {
@@ -106,8 +152,12 @@ class _HomeScreenState extends State<HomeScreen> {
   int? selectedPredictionIndex;
   Timer? _pollTimer;
 
-  final TransformationController _transformationController = TransformationController();
-  double _lastViewportWidth = 0, _lastViewportHeight = 0, _lastImageWidth = 0, _lastImageHeight = 0;
+  final TransformationController _transformationController =
+      TransformationController();
+  double _lastViewportWidth = 0,
+      _lastViewportHeight = 0,
+      _lastImageWidth = 0,
+      _lastImageHeight = 0;
 
   double _headingDeg = 0.0;
   StreamSubscription<CompassEvent>? _compassSub;
@@ -125,16 +175,23 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
     _compassSub = FlutterCompass.events?.listen((event) {
-      final d = event.heading; if (d != null && mounted) setState(() => _headingDeg = d);
+      final d = event.heading;
+      if (d != null && mounted) setState(() => _headingDeg = d);
     });
-    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => fetchPredictionAndUpdateAnchor());
-    _uiTicker = Timer.periodic(const Duration(milliseconds: 66), (_) => _updateFusedPosition());
+    _pollTimer = Timer.periodic(
+        const Duration(seconds: 2), (_) => fetchPredictionAndUpdateAnchor());
+    _uiTicker = Timer.periodic(
+        const Duration(milliseconds: 66), (_) => _updateFusedPosition());
     fetchPredictionAndUpdateAnchor();
   }
 
   @override
   void dispose() {
-    _uiTicker?.cancel(); _pollTimer?.cancel(); _compassSub?.cancel(); _transformationController.dispose(); super.dispose();
+    _uiTicker?.cancel();
+    _pollTimer?.cancel();
+    _compassSub?.cancel();
+    _transformationController.dispose();
+    super.dispose();
   }
 
   // 모든 마커 공통: 하단 시트 열기 (SlideUpCard)
@@ -159,7 +216,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final idx = markerApiValues.indexOf(result.num);
       if (idx >= 0 && idx < markerList.length) {
         final m = markerList[idx];
-        _anchorServerImgPx = Offset((m['x'] as num).toDouble(), (m['y'] as num).toDouble());
+        _anchorServerImgPx =
+            Offset((m['x'] as num).toDouble(), (m['y'] as num).toDouble());
         final st = _sensor.pdr.getState();
         _anchorPdrX = (st['posX'] as num).toDouble();
         _anchorPdrY = (st['posY'] as num).toDouble();
@@ -173,7 +231,10 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _updateFusedPosition() {
-    if (!mounted || _anchorServerImgPx == null || _lastImageWidth == 0 || _lastImageHeight == 0) return;
+    if (!mounted ||
+        _anchorServerImgPx == null ||
+        _lastImageWidth == 0 ||
+        _lastImageHeight == 0) return;
     final st = _sensor.pdr.getState();
     final dxM = (st['posX'] as num).toDouble() - _anchorPdrX;
     final dyM = (st['posY'] as num).toDouble() - _anchorPdrY;
@@ -186,23 +247,30 @@ class _HomeScreenState extends State<HomeScreen> {
     );
     final fused = anchorScaled + Offset(dxPx, dyPx);
     setState(() => _fusedPx = Offset(
-      fused.dx.clamp(0.0, _lastImageWidth),
-      fused.dy.clamp(0.0, _lastImageHeight),
-    ));
+          fused.dx.clamp(0.0, _lastImageWidth),
+          fused.dy.clamp(0.0, _lastImageHeight),
+        ));
   }
 
   void _centerOnCurrentMarker() {
-    if (_lastViewportWidth == 0 || _lastViewportHeight == 0 || _lastImageWidth == 0 || _lastImageHeight == 0) return;
+    if (_lastViewportWidth == 0 ||
+        _lastViewportHeight == 0 ||
+        _lastImageWidth == 0 ||
+        _lastImageHeight == 0) return;
     final target = _fusedPx ??
-        (_anchorServerImgPx == null ? null : Offset(
-          (_anchorServerImgPx!.dx / imageOriginWidth) * _lastImageWidth,
-          (_anchorServerImgPx!.dy / imageOriginHeight) * _lastImageHeight,
-        ));
+        (_anchorServerImgPx == null
+            ? null
+            : Offset(
+                (_anchorServerImgPx!.dx / imageOriginWidth) * _lastImageWidth,
+                (_anchorServerImgPx!.dy / imageOriginHeight) * _lastImageHeight,
+              ));
     if (target == null) return;
     const scale = 1.0;
     final tx = (_lastViewportWidth / 2) - (target.dx * scale);
     final ty = (_lastViewportHeight / 2) - (target.dy * scale);
-    _transformationController.value = Matrix4.identity()..translate(tx, ty)..scale(scale);
+    _transformationController.value = Matrix4.identity()
+      ..translate(tx, ty)
+      ..scale(scale);
   }
 
   @override
@@ -211,86 +279,141 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: LayoutBuilder(builder: (context, constraints) {
           final displayHeight = constraints.maxHeight;
-          final displayWidth = imageOriginWidth * (displayHeight / imageOriginHeight);
-          _lastViewportWidth = constraints.maxWidth; _lastViewportHeight = displayHeight;
-          _lastImageWidth = displayWidth; _lastImageHeight = displayHeight;
+          final displayWidth =
+              imageOriginWidth * (displayHeight / imageOriginHeight);
+          _lastViewportWidth = constraints.maxWidth;
+          _lastViewportHeight = displayHeight;
+          _lastImageWidth = displayWidth;
+          _lastImageHeight = displayHeight;
 
           return Stack(children: [
             Positioned.fill(
               child: InteractiveViewer(
                 transformationController: _transformationController,
-                panEnabled: true, minScale: 1, maxScale: 5, constrained: false,
+                panEnabled: true,
+                minScale: 1,
+                maxScale: 5,
+                constrained: false,
                 boundaryMargin: const EdgeInsets.all(200),
-                child: SizedBox(width: displayWidth, height: displayHeight, child: Stack(children: [
-                  Image.asset('lib/assets/3map.png', fit: BoxFit.fill, width: displayWidth, height: displayHeight),
+                child: SizedBox(
+                    width: displayWidth,
+                    height: displayHeight,
+                    child: Stack(children: [
+                      Image.asset('lib/assets/3map.png',
+                          fit: BoxFit.fill,
+                          width: displayWidth,
+                          height: displayHeight),
 
-                  // 서버 마커 + 번호 + 전부 탭 가능
-                  ...markerList.asMap().entries.map((entry) {
-                    final i = entry.key; final m = entry.value;
-                    final markerApiValue = (i < markerApiValues.length) ? markerApiValues[i] : null;
-                    final mx = (m['x'] as num).toDouble(), my = (m['y'] as num).toDouble();
-                    final scaledLeft = (mx / imageOriginWidth) * displayWidth;
-                    final scaledTop  = (my / imageOriginHeight) * displayHeight;
-                    final isCurrent = selectedPredictionIndex != null && markerApiValue == selectedPredictionIndex;
-                    final markerSize = isCurrent ? 20.0 : 12.0;
+                      // 서버 마커 + 번호 + 전부 탭 가능
+                      ...markerList.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final m = entry.value;
+                        final markerApiValue = (i < markerApiValues.length)
+                            ? markerApiValues[i]
+                            : null;
+                        final mx = (m['x'] as num).toDouble(),
+                            my = (m['y'] as num).toDouble();
+                        final scaledLeft =
+                            (mx / imageOriginWidth) * displayWidth;
+                        final scaledTop =
+                            (my / imageOriginHeight) * displayHeight;
+                        final isCurrent = selectedPredictionIndex != null &&
+                            markerApiValue == selectedPredictionIndex;
+                        final markerSize = isCurrent ? 20.0 : 12.0;
 
-                    return Positioned(
-                      left: scaledLeft - (markerSize / 2), top: scaledTop - (markerSize / 2),
-                      child: GestureDetector(
-                        behavior: HitTestBehavior.opaque,
-                        onTap: () => _openPlaceSheet(markerId: markerApiValue),
-                        child: Column(mainAxisSize: MainAxisSize.min, children: [
-                          Container(
-                            width: markerSize, height: markerSize,
-                            decoration: BoxDecoration(
-                              color: isCurrent ? AppColors.secondary.s800 : AppColors.secondary.s800.withOpacity(0.6),
-                              shape: BoxShape.circle, border: Border.all(color: AppColors.grayscale.s30, width: 2),
-                            ),
+                        return Positioned(
+                          left: scaledLeft - (markerSize / 2),
+                          top: scaledTop - (markerSize / 2),
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () =>
+                                _openPlaceSheet(markerId: markerApiValue),
+                            child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Container(
+                                    width: markerSize,
+                                    height: markerSize,
+                                    decoration: BoxDecoration(
+                                      color: isCurrent
+                                          ? AppColors.secondary.s800
+                                          : AppColors.secondary.s800
+                                              .withOpacity(0.6),
+                                      shape: BoxShape.circle,
+                                      border: Border.all(
+                                          color: AppColors.grayscale.s30,
+                                          width: 2),
+                                    ),
+                                  ),
+                                  const SizedBox(height: 2),
+                                  Text("${markerApiValue ?? '-'}",
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600)),
+                                ]),
                           ),
-                          const SizedBox(height: 2),
-                          Text("${markerApiValue ?? '-'}", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-                        ]),
-                      ),
-                    );
-                  }),
+                        );
+                      }),
 
-                  // 실시간 융합 마커도 탭 가능
-                  if (_fusedPx != null)
-                    Positioned(
-                      left: _fusedPx!.dx - 28, top: _fusedPx!.dy - 28,
-                      child: GestureDetector(
-                        onTap: () => _openPlaceSheet(markerId: selectedPredictionIndex),
-                        child: Column(mainAxisSize: MainAxisSize.min, children: [
-                          NaverCurrentLocationMarker(radius: 28, headingDeg: _headingDeg),
-                          const SizedBox(height: 2),
-                          Text("${selectedPredictionIndex ?? '-'}", style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600)),
-                        ]),
-                      ),
-                    ),
+                      // 실시간 융합 마커도 탭 가능
+                      if (_fusedPx != null)
+                        Positioned(
+                          left: _fusedPx!.dx - 28,
+                          top: _fusedPx!.dy - 28,
+                          child: GestureDetector(
+                            onTap: () => _openPlaceSheet(
+                                markerId: selectedPredictionIndex),
+                            child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  NaverCurrentLocationMarker(
+                                      radius: 28, headingDeg: _headingDeg),
+                                  const SizedBox(height: 2),
+                                  Text("${selectedPredictionIndex ?? '-'}",
+                                      style: const TextStyle(
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w600)),
+                                ]),
+                          ),
+                        ),
 
-                  // 좌상단 API 값
-                  Positioned(
-                    left: 8, top: 8,
-                    child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                      decoration: BoxDecoration(color: AppColors.grayscale.s900.withOpacity(0.6), borderRadius: BorderRadius.circular(8)),
-                      child: Text('API값: ${selectedPredictionIndex ?? '-'}',
-                        style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s30)),
-                    ),
-                  ),
-                ])),
+                      // 좌상단 API 값
+                      Positioned(
+                        left: 8,
+                        top: 8,
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          decoration: BoxDecoration(
+                              color: AppColors.grayscale.s900.withOpacity(0.6),
+                              borderRadius: BorderRadius.circular(8)),
+                          child: Text('API값: ${selectedPredictionIndex ?? '-'}',
+                              style: AppTextStyles.title7
+                                  .copyWith(color: AppColors.grayscale.s30)),
+                        ),
+                      ),
+                    ])),
               ),
             ),
-
             Positioned(
-              right: 16, bottom: 16,
+              right: 16,
+              bottom: 16,
               child: InkWell(
-                onTap: _centerOnCurrentMarker, borderRadius: BorderRadius.circular(32),
+                onTap: _centerOnCurrentMarker,
+                borderRadius: BorderRadius.circular(32),
                 child: Container(
-                  width: 52, height: 52,
-                  decoration: BoxDecoration(color: AppColors.grayscale.s30, shape: BoxShape.circle, border: Border.all(color: AppColors.grayscale.s200)),
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                      color: AppColors.grayscale.s30,
+                      shape: BoxShape.circle,
+                      border: Border.all(color: AppColors.grayscale.s200)),
                   alignment: Alignment.center,
-                  child: SizedBox(width: 24, height: 24, child: Image.asset('lib/assets/images/target.png', fit: BoxFit.contain)),
+                  child: SizedBox(
+                      width: 24,
+                      height: 24,
+                      child: Image.asset('lib/assets/images/target.png',
+                          fit: BoxFit.contain)),
                 ),
               ),
             ),
