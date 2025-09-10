@@ -8,6 +8,10 @@ class PredictRequest {
   final double oriAzimuth;
   final double oriPitch;
   final double oriRoll;
+  final double pdrX;
+  final double pdrY;
+  final int stepCount;
+  final double lastStepLength;
 
   PredictRequest({
     required this.magX,
@@ -16,6 +20,10 @@ class PredictRequest {
     required this.oriAzimuth,
     required this.oriPitch,
     required this.oriRoll,
+    required this.pdrX,          
+    required this.pdrY,          
+    required this.stepCount,     
+    required this.lastStepLength,
   });
 
   Map<String, dynamic> toJson() {

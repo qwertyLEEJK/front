@@ -369,7 +369,7 @@ class _HomeScreenState extends State<HomeScreen> {
                                                   selectedPredictionIndex ==
                                                       markerApiValue)
                                               ? Colors.blue
-                                              : Colors.transparent,
+                                              : AppColors.secondary.s800,
                                           shape: BoxShape.circle,
                                           border: Border.all(
                                               color: AppColors.grayscale.s30,
