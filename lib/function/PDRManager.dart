@@ -41,7 +41,8 @@ class PDRManager {
       stepCount++;
 
       // Δx, Δy 갱신
-      final rad = headingDeg * pi / 180.0;
+      final adjustedHeadingDeg = (headingDeg + 180) % 360;
+      final rad = adjustedHeadingDeg * pi / 180.0;
       final dx = stepLength * sin(rad); // East
       final dy = stepLength * cos(rad); // North
       posX += dx;
