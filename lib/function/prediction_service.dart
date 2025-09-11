@@ -39,7 +39,6 @@ class PredictRequest {
       'Ori_X': oriAzimuth,
       'Ori_Y': oriPitch,
       'Ori_Z': oriRoll,
-      'top_k': 3,
       // 'PDR_X': pdrX,
       // 'PDR_Y': pdrY,
       // 'Step_Count': stepCount,
