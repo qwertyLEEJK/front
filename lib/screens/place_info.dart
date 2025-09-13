@@ -21,7 +21,7 @@ class SlideUpCard extends StatelessWidget {
     final double bottomInset = mediaQuery.viewInsets.bottom; // 키보드 등
 
     // 네비게이션 바가 있다면 추가 여백 (일반적으로 56-80px)
-    final double navigationBarHeight = 80.0; // 앱의 네비게이션 바 높이에 맞게 조정
+    final double navigationBarHeight = 58.0; // 앱의 네비게이션 바 높이에 맞게 조정
 
     // 총 하단 여백 계산
     final double totalBottomGap =
@@ -32,8 +32,6 @@ class SlideUpCard extends StatelessWidget {
       child: Container(
         margin: EdgeInsets.only(
           bottom: totalBottomGap,
-          left: 16,
-          right: 16,
         ),
         height: 227,
         padding: const EdgeInsets.all(16),
