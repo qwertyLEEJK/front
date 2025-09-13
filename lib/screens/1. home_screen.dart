@@ -8,6 +8,7 @@ import '../function/prediction_service.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'dart:math' as math;
 import 'package:midas_project/screens/place_info.dart';
+import 'package:midas_project/function/location_info.dart';
 
 // ===== (A) 마커 좌표 / API 매핑 =====
 final List<Map<String, dynamic>> markerList = [
@@ -195,6 +196,9 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
+    // LocationService 초기화
+    Get.put(LocationService());
+
     // 방위(heading)
     _compassSub = FlutterCompass.events?.listen((event) {
       final d = event.heading;
@@ -227,10 +231,11 @@ class _HomeScreenState extends State<HomeScreen> {
       context: context,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.transparent,
+      isScrollControlled: true, // 추가: 스크롤 제어 활성화
+      useSafeArea: true, // 추가: 안전 영역 사용
       builder: (builderContext) => SlideUpCard(
         onClose: () => Navigator.pop(builderContext),
         markerId: markerId ?? selectedPredictionIndex,
-        // markerId 전달하려면 SlideUpCard 시그니처에 추가해서 연결
       ),
     );
   }

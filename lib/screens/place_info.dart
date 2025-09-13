@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
 import 'package:midas_project/theme/app_colors.dart';
 import 'package:midas_project/theme/app_theme.dart';
-import 'package:midas_project/screens/1. home_screen.dart';
+import 'package:midas_project/function/location_info.dart';
 
-class SlideUpCard extends StatelessWidget {
+class SlideUpCard extends StatefulWidget {
   final VoidCallback onClose;
   final int? markerId;
 
@@ -12,6 +13,25 @@ class SlideUpCard extends StatelessWidget {
     required this.onClose,
     this.markerId,
   });
+
+  @override
+  State<SlideUpCard> createState() => _SlideUpCardState();
+}
+
+class _SlideUpCardState extends State<SlideUpCard> {
+  late final LocationService _locationService;
+
+  @override
+  void initState() {
+    super.initState();
+    // LocationService 인스턴스 가져오기 (없으면 생성)
+    _locationService = Get.find<LocationService>();
+    
+    // markerId가 있으면 해당 위치 정보 로드
+    if (widget.markerId != null) {
+      _locationService.setMarkerId(widget.markerId);
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -50,85 +70,159 @@ class SlideUpCard extends StatelessWidget {
             ),
           ],
         ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            // 헤더
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        child: Obx(() {
+          final isLoading = _locationService.loading.value;
+          final location = _locationService.location.value;
+          final error = _locationService.error.value;
+          
+          if (isLoading) {
+            return const Center(
+              child: CircularProgressIndicator(),
+            );
+          }
+          
+          if (error != null) {
+            return Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text("영남대학교 IT관", style: AppTextStyles.title6),
-                Image.asset('lib/assets/images/fill_star.png',
-                    width: 24, height: 24),
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text("오류 발생", style: AppTextStyles.title6),
+                    Image.asset('lib/assets/images/fill_star.png',
+                        width: 24, height: 24),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  error,
+                  style: AppTextStyles.body2_1
+                      .copyWith(color: AppColors.grayscale.s600),
+                ),
+                const Spacer(),
+                Center(
+                  child: IconButton(
+                    icon: const Icon(Icons.keyboard_arrow_down),
+                    onPressed: widget.onClose,
+                  ),
+                ),
               ],
-            ),
-            const SizedBox(height: 10),
-            Text(
-              "경북 경산시 삼풍동 영남대학교 공과대학본관",
-              style: AppTextStyles.body2_1
-                  .copyWith(color: AppColors.grayscale.s600),
-            ),
-            const SizedBox(height: 16),
-            const Spacer(),
-            // 액션 버튼
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: 6),
-              child: Row(
+            );
+          }
+          
+          // 위치 정보가 없을 때 기본값 표시
+          final locationName = location?.locationName ?? "위치 정보 없음";
+          final description = location?.description ?? "위치 설명이 없습니다.";
+          final floor = location?.floor ?? 0;
+          final address = location?.address ?? "주소 정보 없음";
+          final markerId = widget.markerId ?? 0;
+
+          return Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // 헤더
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Expanded(
-                    child: SizedBox(
-                      height: 44,
-                      child: ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          elevation: 0,
-                          backgroundColor: AppColors.primary.s500,
-                          foregroundColor: AppColors.grayscale.s30,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          address,
+                          style: AppTextStyles.title6,
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                        if (floor > 0)
+                          Text(
+                            "${floor}층 | ID: $markerId",
+                            style: AppTextStyles.body2_1.copyWith(
+                              color: AppColors.grayscale.s500,
+                              fontSize: 12,
+                            ),
                           ),
-                        ),
-                        child: Text(
-                          "출발",
-                          style: AppTextStyles.body1_3
-                              .copyWith(color: AppColors.grayscale.s30),
-                        ),
-                      ),
+                      ],
                     ),
                   ),
-                  const SizedBox(width: 14),
-                  Expanded(
-                    child: SizedBox(
-                      height: 44,
-                      child: ElevatedButton(
-                        onPressed: () {},
-                        style: ElevatedButton.styleFrom(
-                          elevation: 0,
-                          backgroundColor: AppColors.primary.s50,
-                          foregroundColor: AppColors.primary.s500,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                        ),
-                        child: Text(
-                          "도착",
-                          style: AppTextStyles.body1_3
-                              .copyWith(color: AppColors.primary.s500),
-                        ),
-                      ),
-                    ),
-                  ),
+                  Image.asset('lib/assets/images/fill_star.png',
+                      width: 24, height: 24),
                 ],
               ),
-            ),
-            Center(
-              child: IconButton(
-                icon: const Icon(Icons.keyboard_arrow_down),
-                onPressed: onClose,
+              const SizedBox(height: 8),
+              Text(
+                locationName,
+                style: AppTextStyles.body2_1.copyWith(
+                  color: AppColors.grayscale.s500,
+                  fontSize: 12,
+                ),
+                overflow: TextOverflow.ellipsis,
               ),
-            ),
-          ],
-        ),
+              const SizedBox(height: 12),
+              const Expanded(child: SizedBox()),
+              // 액션 버튼
+              Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 6),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: SizedBox(
+                        height: 44,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // 출발 버튼 로직 구현
+                          },
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            backgroundColor: AppColors.primary.s500,
+                            foregroundColor: AppColors.grayscale.s30,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          child: Text(
+                            "출발",
+                            style: AppTextStyles.body1_3
+                                .copyWith(color: AppColors.grayscale.s30),
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: SizedBox(
+                        height: 44,
+                        child: ElevatedButton(
+                          onPressed: () {
+                            // 도착 버튼 로직 구현
+                          },
+                          style: ElevatedButton.styleFrom(
+                            elevation: 0,
+                            backgroundColor: AppColors.primary.s50,
+                            foregroundColor: AppColors.primary.s500,
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(6),
+                            ),
+                          ),
+                          child: Text(
+                            "도착",
+                            style: AppTextStyles.body1_3
+                                .copyWith(color: AppColors.primary.s500),
+                          ),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+              Center(
+                child: IconButton(
+                  icon: const Icon(Icons.keyboard_arrow_down),
+                  onPressed: widget.onClose,
+                ),
+              ),
+            ],
+          );
+        }),
       ),
     );
   }
