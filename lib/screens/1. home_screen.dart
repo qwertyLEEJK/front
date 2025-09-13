@@ -7,7 +7,7 @@ import '../function/sensor_controller.dart';
 import '../function/prediction_service.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'dart:math' as math;
-import 'place_info.dart';
+import 'package:midas_project/screens/place_info.dart';
 
 // ===== (A) 마커 좌표 / API 매핑 =====
 final List<Map<String, dynamic>> markerList = [
@@ -26,12 +26,12 @@ final List<Map<String, dynamic>> markerList = [
   {"x": 1384, "y": 830}, //13
   {"x": 1242, "y": 830}, //14
   {"x": 1100, "y": 830}, //15
-  {"x": 958,  "y": 830}, //16
-  {"x": 816,  "y": 830}, //17
-  {"x": 674,  "y": 830}, //18
-  {"x": 532,  "y": 830}, //19
-  {"x": 390,  "y": 830}, //20
-  {"x": 238,  "y": 880}, //21
+  {"x": 958, "y": 830}, //16
+  {"x": 816, "y": 830}, //17
+  {"x": 674, "y": 830}, //18
+  {"x": 532, "y": 830}, //19
+  {"x": 390, "y": 830}, //20
+  {"x": 238, "y": 880}, //21
   {"x": 2777, "y": 730}, //22
   {"x": 2777, "y": 540}, //23
   {"x": 1800, "y": 755}, //24
@@ -43,16 +43,43 @@ final List<Map<String, dynamic>> markerList = [
 ];
 
 final List<int> markerApiValues = [
-  1, 2, 3, 4, 5, 6, 7, 8, 9, 10,
-  11,12,13,14,15,16,17,18,19,20,
-  21,22,23,24,25,26,27,28,29
+  1,
+  2,
+  3,
+  4,
+  5,
+  6,
+  7,
+  8,
+  9,
+  10,
+  11,
+  12,
+  13,
+  14,
+  15,
+  16,
+  17,
+  18,
+  19,
+  20,
+  21,
+  22,
+  23,
+  24,
+  25,
+  26,
+  27,
+  28,
+  29
 ];
 
 // ===== 네이버 현재위치 스타일 마커 =====
 class NaverCurrentLocationMarker extends StatelessWidget {
   final double radius;
   final double headingDeg;
-  const NaverCurrentLocationMarker({super.key, this.radius = 28, this.headingDeg = 0});
+  const NaverCurrentLocationMarker(
+      {super.key, this.radius = 28, this.headingDeg = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -73,7 +100,8 @@ class NaverCurrentLocationMarker extends StatelessWidget {
         // 방위 삼각형
         Transform.rotate(
           angle: (headingDeg + 180) * math.pi / 180.0,
-          child: CustomPaint(size: const Size(20, 20), painter: _HeadingTrianglePainter()),
+          child: CustomPaint(
+              size: const Size(20, 20), painter: _HeadingTrianglePainter()),
         ),
         // 흰 링
         Container(
@@ -88,7 +116,8 @@ class NaverCurrentLocationMarker extends StatelessWidget {
         Container(
           width: 10,
           height: 10,
-          decoration: BoxDecoration(color: AppColors.secondary.s800, shape: BoxShape.circle),
+          decoration: BoxDecoration(
+              color: AppColors.secondary.s800, shape: BoxShape.circle),
         ),
       ]),
     );
@@ -120,7 +149,7 @@ class _HeadingTrianglePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-const double imageOriginWidth  = 3508;
+const double imageOriginWidth = 3508;
 const double imageOriginHeight = 1422;
 
 class HomeScreen extends StatefulWidget {
@@ -133,8 +162,12 @@ class _HomeScreenState extends State<HomeScreen> {
   int? selectedPredictionIndex;
   Timer? _pollTimer;
 
-  final TransformationController _transformationController = TransformationController();
-  double _lastViewportWidth = 0, _lastViewportHeight = 0, _lastImageWidth = 0, _lastImageHeight = 0;
+  final TransformationController _transformationController =
+      TransformationController();
+  double _lastViewportWidth = 0,
+      _lastViewportHeight = 0,
+      _lastImageWidth = 0,
+      _lastImageHeight = 0;
 
   double _headingDeg = 0.0;
   StreamSubscription<CompassEvent>? _compassSub;
@@ -169,10 +202,12 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     // 서버 폴링(2초)
-    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => fetchPredictionAndUpdateAnchor());
+    _pollTimer = Timer.periodic(
+        const Duration(seconds: 2), (_) => fetchPredictionAndUpdateAnchor());
 
     // PDR 보간(66ms)
-    _uiTicker = Timer.periodic(const Duration(milliseconds: 66), (_) => _updateFusedPosition());
+    _uiTicker = Timer.periodic(
+        const Duration(milliseconds: 66), (_) => _updateFusedPosition());
 
     fetchPredictionAndUpdateAnchor();
   }
@@ -194,6 +229,7 @@ class _HomeScreenState extends State<HomeScreen> {
       barrierColor: Colors.transparent,
       builder: (builderContext) => SlideUpCard(
         onClose: () => Navigator.pop(builderContext),
+        markerId: markerId ?? selectedPredictionIndex,
         // markerId 전달하려면 SlideUpCard 시그니처에 추가해서 연결
       ),
     );
@@ -214,7 +250,8 @@ class _HomeScreenState extends State<HomeScreen> {
       final idx = markerApiValues.indexOf(result.num);
       if (idx >= 0 && idx < markerList.length) {
         final m = markerList[idx];
-        _anchorServerImgPx = Offset((m['x'] as num).toDouble(), (m['y'] as num).toDouble());
+        _anchorServerImgPx =
+            Offset((m['x'] as num).toDouble(), (m['y'] as num).toDouble());
 
         final st = _sensor.pdr.getState();
         _anchorPdrX = (st['posX'] as num).toDouble();
@@ -231,7 +268,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 실시간 융합 좌표 갱신
   void _updateFusedPosition() {
-    if (!mounted || _anchorServerImgPx == null || _lastImageWidth == 0 || _lastImageHeight == 0) return;
+    if (!mounted ||
+        _anchorServerImgPx == null ||
+        _lastImageWidth == 0 ||
+        _lastImageHeight == 0) return;
 
     final st = _sensor.pdr.getState();
     final dxM = (st['posX'] as num).toDouble() - _anchorPdrX; // East(+)
@@ -259,7 +299,10 @@ class _HomeScreenState extends State<HomeScreen> {
 
   // 현재(융합) 마커로 센터링
   void _centerOnCurrentMarker() {
-    if (_lastViewportWidth == 0 || _lastViewportHeight == 0 || _lastImageWidth == 0 || _lastImageHeight == 0) return;
+    if (_lastViewportWidth == 0 ||
+        _lastViewportHeight == 0 ||
+        _lastImageWidth == 0 ||
+        _lastImageHeight == 0) return;
 
     final target = _fusedPx ??
         (_anchorServerImgPx == null
@@ -285,12 +328,13 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: LayoutBuilder(builder: (context, constraints) {
           final displayHeight = constraints.maxHeight;
-          final displayWidth  = imageOriginWidth * (displayHeight / imageOriginHeight);
+          final displayWidth =
+              imageOriginWidth * (displayHeight / imageOriginHeight);
 
-          _lastViewportWidth  = constraints.maxWidth;
+          _lastViewportWidth = constraints.maxWidth;
           _lastViewportHeight = displayHeight;
-          _lastImageWidth     = displayWidth;
-          _lastImageHeight    = displayHeight;
+          _lastImageWidth = displayWidth;
+          _lastImageHeight = displayHeight;
 
           return Stack(children: [
             // 지도 & 마커
@@ -319,23 +363,28 @@ class _HomeScreenState extends State<HomeScreen> {
                       final i = entry.key;
                       final m = entry.value;
 
-                      final markerApiValue = (i < markerApiValues.length) ? markerApiValues[i] : null;
+                      final markerApiValue = (i < markerApiValues.length)
+                          ? markerApiValues[i]
+                          : null;
 
                       final mx = (m['x'] as num).toDouble();
                       final my = (m['y'] as num).toDouble();
 
-                      final scaledLeft = (mx / imageOriginWidth)  * displayWidth;
-                      final scaledTop  = (my / imageOriginHeight) * displayHeight;
+                      final scaledLeft = (mx / imageOriginWidth) * displayWidth;
+                      final scaledTop =
+                          (my / imageOriginHeight) * displayHeight;
 
-                      final isCurrent = selectedPredictionIndex != null && markerApiValue == selectedPredictionIndex;
+                      final isCurrent = selectedPredictionIndex != null &&
+                          markerApiValue == selectedPredictionIndex;
                       final markerSize = isCurrent ? 20.0 : 12.0;
 
                       return Positioned(
                         left: scaledLeft - (markerSize / 2),
-                        top:  scaledTop  - (markerSize / 2),
+                        top: scaledTop - (markerSize / 2),
                         child: GestureDetector(
                           behavior: HitTestBehavior.opaque,
-                          onTap: () => _openPlaceSheet(markerId: markerApiValue),
+                          onTap: () =>
+                              _openPlaceSheet(markerId: markerApiValue),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
@@ -345,15 +394,18 @@ class _HomeScreenState extends State<HomeScreen> {
                                 decoration: BoxDecoration(
                                   color: isCurrent
                                       ? AppColors.secondary.s800
-                                      : AppColors.secondary.s800.withOpacity(0.6),
+                                      : AppColors.secondary.s800
+                                          .withOpacity(0.6),
                                   shape: BoxShape.circle,
-                                  border: Border.all(color: AppColors.grayscale.s30, width: 2),
+                                  border: Border.all(
+                                      color: AppColors.grayscale.s30, width: 2),
                                 ),
                               ),
                               const SizedBox(height: 2),
                               Text(
                                 "${markerApiValue ?? '-'}",
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                    fontSize: 11, fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
@@ -365,17 +417,20 @@ class _HomeScreenState extends State<HomeScreen> {
                     if (_fusedPx != null)
                       Positioned(
                         left: _fusedPx!.dx - 28, // radius=28
-                        top:  _fusedPx!.dy - 28,
+                        top: _fusedPx!.dy - 28,
                         child: GestureDetector(
-                          onTap: () => _openPlaceSheet(markerId: selectedPredictionIndex),
+                          onTap: () => _openPlaceSheet(
+                              markerId: selectedPredictionIndex),
                           child: Column(
                             mainAxisSize: MainAxisSize.min,
                             children: [
-                              NaverCurrentLocationMarker(radius: 28, headingDeg: _headingDeg),
+                              NaverCurrentLocationMarker(
+                                  radius: 28, headingDeg: _headingDeg),
                               const SizedBox(height: 2),
                               Text(
                                 "${selectedPredictionIndex ?? '-'}",
-                                style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                style: const TextStyle(
+                                    fontSize: 11, fontWeight: FontWeight.w600),
                               ),
                             ],
                           ),
@@ -391,14 +446,16 @@ class _HomeScreenState extends State<HomeScreen> {
                         children: [
                           // API값
                           Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 12, vertical: 6),
                             decoration: BoxDecoration(
                               color: AppColors.grayscale.s900.withOpacity(0.6),
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: Text(
                               'API값: ${selectedPredictionIndex ?? '-'}',
-                              style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s30),
+                              style: AppTextStyles.title7
+                                  .copyWith(color: AppColors.grayscale.s30),
                             ),
                           ),
                           const SizedBox(height: 6),
@@ -406,9 +463,11 @@ class _HomeScreenState extends State<HomeScreen> {
                           // top_k_results (문자열 그대로 표시)
                           if (_topK.isNotEmpty)
                             Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                              padding: const EdgeInsets.symmetric(
+                                  horizontal: 12, vertical: 8),
                               decoration: BoxDecoration(
-                                color: AppColors.grayscale.s900.withOpacity(0.6),
+                                color:
+                                    AppColors.grayscale.s900.withOpacity(0.6),
                                 borderRadius: BorderRadius.circular(8),
                               ),
                               child: Column(
