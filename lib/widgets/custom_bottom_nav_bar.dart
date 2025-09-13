@@ -34,7 +34,6 @@ class CustomBottomNavBar extends StatelessWidget {
         top: false, // 상단은 안전 영역이 필요 없으므로 false
 
         child: Container(
-
           height: 58, // 아이콘과 텍스트가 실제 차지할 영역의 높이 (피그마상 38인데 실행하니까 58이 적정해 보임)
 
           child: Row(
