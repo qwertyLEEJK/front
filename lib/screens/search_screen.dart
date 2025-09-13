@@ -228,17 +228,19 @@ class _SearchScreenState extends State<SearchScreen> {
     );
   }
 
-  // 즐겨찾기 항목 위젯 (새로운 모델 구조에 맞게 수정)
+  // 즐겨찾기 항목 위젯
+  // TODO : 서버쪽과 항목 중 '학교'를 별도 추가 논의
   Widget _buildFavoriteItem(Favorite item) {
     String title = item.name;
     String subtitle = '';
-    IconData iconData = Icons.star; // 기본 아이콘
+    IconData iconData = Icons.star; // 기본값으로 사용
+    Widget? iconWidget; // ? : 변수가 null일 수 있음 (예외 경우에 선택적으로 사용)
 
     if (item.type == FavoriteType.place) {
       subtitle = item.address ?? '주소 정보 없음';
       switch (item.placeCategory) {
         case 'home':
-          iconData = Icons.home_outlined;
+          iconWidget = Image.asset('lib/assets/images/home_unselected.png', width: 24, height: 24);
           break;
         case 'work':
           iconData = Icons.work_outline;
@@ -248,7 +250,7 @@ class _SearchScreenState extends State<SearchScreen> {
       }
     } else if (item.type == FavoriteType.bus) {
       subtitle = '버스 번호: ${item.busNumber ?? '정보 없음'}';
-      iconData = Icons.directions_bus;
+      iconWidget = Image.asset('lib/assets/images/bus_unselected.png', width: 24, height: 24);
     } else if (item.type == FavoriteType.busStop) {
       title = item.stationName ?? '정류장 이름 없음';
       subtitle = '정류장 번호: ${item.stationId ?? '정보 없음'}';
@@ -264,7 +266,8 @@ class _SearchScreenState extends State<SearchScreen> {
         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 12.0),
         child: Row(
           children: [
-            Icon(iconData, color: AppColors.grayscale.s500, size: 24),
+            // iconWidget에 값이 있을 경우 iconWidget, 없을 경우 Icon(...) 위젯을 사용
+            iconWidget ?? Icon(iconData, color: AppColors.grayscale.s500, size: 24),
             const SizedBox(width: 16),
             Expanded(
               child: Column(
