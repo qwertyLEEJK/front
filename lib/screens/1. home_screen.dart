@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/foundation.dart'; // ValueListenable
 import 'dart:async';
 import 'package:get/get.dart';
 import 'package:midas_project/theme/app_colors.dart';
@@ -44,43 +45,16 @@ final List<Map<String, dynamic>> markerList = [
 ];
 
 final List<int> markerApiValues = [
-  1,
-  2,
-  3,
-  4,
-  5,
-  6,
-  7,
-  8,
-  9,
-  10,
-  11,
-  12,
-  13,
-  14,
-  15,
-  16,
-  17,
-  18,
-  19,
-  20,
-  21,
-  22,
-  23,
-  24,
-  25,
-  26,
-  27,
-  28,
-  29
+  1,2,3,4,5,6,7,8,9,10,
+  11,12,13,14,15,16,17,18,19,20,
+  21,22,23,24,25,26,27,28,29
 ];
 
 // ===== 네이버 현재위치 스타일 마커 =====
 class NaverCurrentLocationMarker extends StatelessWidget {
   final double radius;
   final double headingDeg;
-  const NaverCurrentLocationMarker(
-      {super.key, this.radius = 28, this.headingDeg = 0});
+  const NaverCurrentLocationMarker({super.key, this.radius = 28, this.headingDeg = 0});
 
   @override
   Widget build(BuildContext context) {
@@ -101,13 +75,11 @@ class NaverCurrentLocationMarker extends StatelessWidget {
         // 방위 삼각형
         Transform.rotate(
           angle: (headingDeg + 180) * math.pi / 180.0,
-          child: CustomPaint(
-              size: const Size(20, 20), painter: _HeadingTrianglePainter()),
+          child: CustomPaint(size: const Size(20, 20), painter: _HeadingTrianglePainter()),
         ),
         // 흰 링
         Container(
-          width: 18,
-          height: 18,
+          width: 18, height: 18,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.grayscale.s30, width: 2),
@@ -115,10 +87,8 @@ class NaverCurrentLocationMarker extends StatelessWidget {
         ),
         // 파란 점
         Container(
-          width: 10,
-          height: 10,
-          decoration: BoxDecoration(
-              color: AppColors.secondary.s800, shape: BoxShape.circle),
+          width: 10, height: 10,
+          decoration: BoxDecoration(color: AppColors.secondary.s800, shape: BoxShape.circle),
         ),
       ]),
     );
@@ -154,7 +124,15 @@ const double imageOriginWidth = 3508;
 const double imageOriginHeight = 1422;
 
 class HomeScreen extends StatefulWidget {
-  const HomeScreen({super.key});
+  const HomeScreen({
+    super.key,
+    this.bottomInsetListenable,
+    this.onRequestCollapsePanel, // 바깥 탭/마커 탭에서 호출
+  });
+
+  final ValueListenable<double>? bottomInsetListenable;
+  final Future<void> Function()? onRequestCollapsePanel;
+
   @override
   State<HomeScreen> createState() => _HomeScreenState();
 }
@@ -163,12 +141,8 @@ class _HomeScreenState extends State<HomeScreen> {
   int? selectedPredictionIndex;
   Timer? _pollTimer;
 
-  final TransformationController _transformationController =
-      TransformationController();
-  double _lastViewportWidth = 0,
-      _lastViewportHeight = 0,
-      _lastImageWidth = 0,
-      _lastImageHeight = 0;
+  final TransformationController _transformationController = TransformationController();
+  double _lastViewportWidth = 0, _lastViewportHeight = 0, _lastImageWidth = 0, _lastImageHeight = 0;
 
   double _headingDeg = 0.0;
   StreamSubscription<CompassEvent>? _compassSub;
@@ -206,12 +180,10 @@ class _HomeScreenState extends State<HomeScreen> {
     });
 
     // 서버 폴링(2초)
-    _pollTimer = Timer.periodic(
-        const Duration(seconds: 2), (_) => fetchPredictionAndUpdateAnchor());
+    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => fetchPredictionAndUpdateAnchor());
 
     // PDR 보간(66ms)
-    _uiTicker = Timer.periodic(
-        const Duration(milliseconds: 66), (_) => _updateFusedPosition());
+    _uiTicker = Timer.periodic(const Duration(milliseconds: 66), (_) => _updateFusedPosition());
 
     fetchPredictionAndUpdateAnchor();
   }
@@ -225,16 +197,27 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // 모든 마커 공통: 하단 시트 열기
-  void _openPlaceSheet({int? markerId}) {
-    showModalBottomSheet(
+  // 바깥(지도 빈공간) 탭 → 패널 접기 (마커 탭은 아래 GestureDetector가 우선이므로 부모 onTap 실행 안됨)
+  void _onMapBlankTap() {
+    final collapse = widget.onRequestCollapsePanel;
+    if (collapse != null) collapse();
+  }
+
+  // 마커 탭 → 패널 접고 → SlideUpCard
+  Future<void> _openPlaceSheet({int? markerId}) async {
+    if (widget.onRequestCollapsePanel != null) {
+      await widget.onRequestCollapsePanel!.call();
+    }
+    if (!mounted) return;
+    await showModalBottomSheet(
       context: context,
+      useRootNavigator: true,
+      isScrollControlled: true,
       backgroundColor: Colors.transparent,
       barrierColor: Colors.transparent,
-      isScrollControlled: true, // 추가: 스크롤 제어 활성화
-      useSafeArea: true, // 추가: 안전 영역 사용
-      builder: (builderContext) => SlideUpCard(
-        onClose: () => Navigator.pop(builderContext),
+      useSafeArea: true,
+      builder: (ctx) => SlideUpCard(
+        onClose: () => Navigator.pop(ctx),
         markerId: markerId ?? selectedPredictionIndex,
       ),
     );
@@ -248,8 +231,7 @@ class _HomeScreenState extends State<HomeScreen> {
     if (result != null) {
       setState(() {
         selectedPredictionIndex = result.num;
-        // ★ top_k_results 추가 저장
-        _topK = (result.topKRaw); // prediction_service.dart에서 topKRaw 제공
+        _topK = (result.topKRaw);
       });
 
       final idx = markerApiValues.indexOf(result.num);
@@ -265,18 +247,13 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-  // 벡터 회전(맵 회전에 맞춤)
   Offset _rotate(Offset v, double deg) {
     final r = deg * math.pi / 180.0, c = math.cos(r), s = math.sin(r);
     return Offset(c * v.dx - s * v.dy, s * v.dx + c * v.dy);
   }
 
-  // 실시간 융합 좌표 갱신
   void _updateFusedPosition() {
-    if (!mounted ||
-        _anchorServerImgPx == null ||
-        _lastImageWidth == 0 ||
-        _lastImageHeight == 0) return;
+    if (!mounted || _anchorServerImgPx == null || _lastImageWidth == 0 || _lastImageHeight == 0) return;
 
     final st = _sensor.pdr.getState();
     final dxM = (st['posX'] as num).toDouble() - _anchorPdrX; // East(+)
@@ -302,12 +279,8 @@ class _HomeScreenState extends State<HomeScreen> {
     });
   }
 
-  // 현재(융합) 마커로 센터링
   void _centerOnCurrentMarker() {
-    if (_lastViewportWidth == 0 ||
-        _lastViewportHeight == 0 ||
-        _lastImageWidth == 0 ||
-        _lastImageHeight == 0) return;
+    if (_lastViewportWidth == 0 || _lastViewportHeight == 0 || _lastImageWidth == 0 || _lastImageHeight == 0) return;
 
     final target = _fusedPx ??
         (_anchorServerImgPx == null
@@ -333,8 +306,7 @@ class _HomeScreenState extends State<HomeScreen> {
       body: SafeArea(
         child: LayoutBuilder(builder: (context, constraints) {
           final displayHeight = constraints.maxHeight;
-          final displayWidth =
-              imageOriginWidth * (displayHeight / imageOriginHeight);
+          final displayWidth = imageOriginWidth * (displayHeight / imageOriginHeight);
 
           _lastViewportWidth = constraints.maxWidth;
           _lastViewportHeight = displayHeight;
@@ -342,188 +314,180 @@ class _HomeScreenState extends State<HomeScreen> {
           _lastImageHeight = displayHeight;
 
           return Stack(children: [
-            // 지도 & 마커
+            // 지도 & 마커 (지도 빈공간 탭 = 바깥 탭으로 간주)
             Positioned.fill(
-              child: InteractiveViewer(
-                transformationController: _transformationController,
-                panEnabled: true,
-                minScale: 1,
-                maxScale: 5,
-                constrained: false,
-                boundaryMargin: const EdgeInsets.all(200),
-                child: SizedBox(
-                  width: displayWidth,
-                  height: displayHeight,
-                  child: Stack(children: [
-                    // 지도 이미지
-                    Image.asset(
-                      'lib/assets/3map.png',
-                      fit: BoxFit.fill,
-                      width: displayWidth,
-                      height: displayHeight,
-                    ),
-
-                    // 서버 마커(모두 탭 가능, 번호 표시)
-                    ...markerList.asMap().entries.map((entry) {
-                      final i = entry.key;
-                      final m = entry.value;
-
-                      final markerApiValue = (i < markerApiValues.length)
-                          ? markerApiValues[i]
-                          : null;
-
-                      final mx = (m['x'] as num).toDouble();
-                      final my = (m['y'] as num).toDouble();
-
-                      final scaledLeft = (mx / imageOriginWidth) * displayWidth;
-                      final scaledTop =
-                          (my / imageOriginHeight) * displayHeight;
-
-                      final isCurrent = selectedPredictionIndex != null &&
-                          markerApiValue == selectedPredictionIndex;
-                      final markerSize = isCurrent ? 20.0 : 12.0;
-
-                      return Positioned(
-                        left: scaledLeft - (markerSize / 2),
-                        top: scaledTop - (markerSize / 2),
-                        child: GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: () =>
-                              _openPlaceSheet(markerId: markerApiValue),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              Container(
-                                width: markerSize,
-                                height: markerSize,
-                                decoration: BoxDecoration(
-                                  color: isCurrent
-                                      ? AppColors.secondary.s800
-                                      : AppColors.secondary.s800
-                                          .withOpacity(0.6),
-                                  shape: BoxShape.circle,
-                                  border: Border.all(
-                                      color: AppColors.grayscale.s30, width: 2),
-                                ),
-                              ),
-                              const SizedBox(height: 2),
-                              Text(
-                                "${markerApiValue ?? '-'}",
-                                style: const TextStyle(
-                                    fontSize: 11, fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                        ),
-                      );
-                    }),
-
-                    // 실시간 융합 마커(네이버 스타일, 탭 가능)
-                    if (_fusedPx != null)
-                      Positioned(
-                        left: _fusedPx!.dx - 28, // radius=28
-                        top: _fusedPx!.dy - 28,
-                        child: GestureDetector(
-                          onTap: () => _openPlaceSheet(
-                              markerId: selectedPredictionIndex),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            children: [
-                              NaverCurrentLocationMarker(
-                                  radius: 28, headingDeg: _headingDeg),
-                              const SizedBox(height: 2),
-                              Text(
-                                "${selectedPredictionIndex ?? '-'}",
-                                style: const TextStyle(
-                                    fontSize: 11, fontWeight: FontWeight.w600),
-                              ),
-                            ],
-                          ),
-                        ),
+              child: GestureDetector(
+                behavior: HitTestBehavior.opaque,
+                onTap: _onMapBlankTap, // 빈 공간 탭 시 패널 접기
+                child: InteractiveViewer(
+                  transformationController: _transformationController,
+                  panEnabled: true,
+                  minScale: 1,
+                  maxScale: 5,
+                  constrained: false,
+                  boundaryMargin: const EdgeInsets.all(200),
+                  child: SizedBox(
+                    width: displayWidth,
+                    height: displayHeight,
+                    child: Stack(children: [
+                      // 지도 이미지
+                      Image.asset(
+                        'lib/assets/3map.png',
+                        fit: BoxFit.fill,
+                        width: displayWidth,
+                        height: displayHeight,
                       ),
 
-                    // 좌상단: API값 박스 + top_k_results 박스
-                    Positioned(
-                      left: 8,
-                      top: 8,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          // API값
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                                horizontal: 12, vertical: 6),
-                            decoration: BoxDecoration(
-                              color: AppColors.grayscale.s900.withOpacity(0.6),
-                              borderRadius: BorderRadius.circular(8),
-                            ),
-                            child: Text(
-                              'API값: ${selectedPredictionIndex ?? '-'}',
-                              style: AppTextStyles.title7
-                                  .copyWith(color: AppColors.grayscale.s30),
+                      // 서버 마커(모두 탭 가능, 번호 표시)
+                      ...markerList.asMap().entries.map((entry) {
+                        final i = entry.key;
+                        final m = entry.value;
+
+                        final markerApiValue = (i < markerApiValues.length)
+                            ? markerApiValues[i]
+                            : null;
+
+                        final mx = (m['x'] as num).toDouble();
+                        final my = (m['y'] as num).toDouble();
+
+                        final scaledLeft = (mx / imageOriginWidth) * displayWidth;
+                        final scaledTop  = (my / imageOriginHeight) * displayHeight;
+
+                        final isCurrent = selectedPredictionIndex != null && markerApiValue == selectedPredictionIndex;
+                        final markerSize = 20.0;
+
+                        return Positioned(
+                          left: scaledLeft - (markerSize / 2),
+                          top:  scaledTop  - (markerSize / 2),
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () => _openPlaceSheet(markerId: markerApiValue),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                Container(
+                                  width: markerSize,
+                                  height: markerSize,
+                                  decoration: BoxDecoration(
+                                    color: isCurrent
+                                        ? AppColors.secondary.s800
+                                        : AppColors.secondary.s800.withOpacity(0.6),
+                                    shape: BoxShape.circle,
+                                    border: Border.all(color: AppColors.grayscale.s30, width: 2),
+                                  ),
+                                ),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "${markerApiValue ?? '-'}",
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                ),
+                              ],
                             ),
                           ),
-                          const SizedBox(height: 6),
+                        );
+                      }),
 
-                          // top_k_results (문자열 그대로 표시)
-                          if (_topK.isNotEmpty)
+                      // 실시간 융합 마커(네이버 스타일, 탭 가능)
+                      if (_fusedPx != null)
+                        Positioned(
+                          left: _fusedPx!.dx - 28, // radius=28
+                          top:  _fusedPx!.dy - 28,
+                          child: GestureDetector(
+                            onTap: () => _openPlaceSheet(markerId: selectedPredictionIndex),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                NaverCurrentLocationMarker(radius: 28, headingDeg: _headingDeg),
+                                const SizedBox(height: 2),
+                                Text(
+                                  "${selectedPredictionIndex ?? '-'}",
+                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+
+                      // 좌상단: API값 + top_k
+                      Positioned(
+                        left: 8,
+                        top: 8,
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
                             Container(
-                              padding: const EdgeInsets.symmetric(
-                                  horizontal: 12, vertical: 8),
+                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                               decoration: BoxDecoration(
-                                color:
-                                    AppColors.grayscale.s900.withOpacity(0.6),
+                                color: AppColors.grayscale.s900.withOpacity(0.6),
                                 borderRadius: BorderRadius.circular(8),
                               ),
-                              child: Column(
-                                crossAxisAlignment: CrossAxisAlignment.start,
-                                children: List.generate(_topK.length, (i) {
-                                  return Padding(
-                                    padding: const EdgeInsets.only(bottom: 2),
-                                    child: Text(
-                                      _topK[i], // 예: "271 (0.9845)"
-                                      style: AppTextStyles.title7.copyWith(
-                                        color: AppColors.grayscale.s30,
-                                      ),
-                                    ),
-                                  );
-                                }),
+                              child: Text(
+                                'API값: ${selectedPredictionIndex ?? '-'}',
+                                style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s30),
                               ),
                             ),
-                        ],
+                            const SizedBox(height: 6),
+                            if (_topK.isNotEmpty)
+                              Container(
+                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                                decoration: BoxDecoration(
+                                  color: AppColors.grayscale.s900.withOpacity(0.6),
+                                  borderRadius: BorderRadius.circular(8),
+                                ),
+                                child: Column(
+                                  crossAxisAlignment: CrossAxisAlignment.start,
+                                  children: List.generate(_topK.length, (i) {
+                                    return Padding(
+                                      padding: const EdgeInsets.only(bottom: 2),
+                                      child: Text(
+                                        _topK[i],
+                                        style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s30),
+                                      ),
+                                    );
+                                  }),
+                                ),
+                              ),
+                          ],
+                        ),
                       ),
-                    ),
-                  ]),
+                    ]),
+                  ),
                 ),
               ),
             ),
 
-            // 오른쪽 아래 타깃 버튼
-            Positioned(
-              right: 16,
-              bottom: 16,
-              child: InkWell(
-                onTap: _centerOnCurrentMarker,
-                borderRadius: BorderRadius.circular(32),
-                child: Container(
-                  width: 52,
-                  height: 52,
-                  decoration: BoxDecoration(
-                    color: AppColors.grayscale.s30,
-                    shape: BoxShape.circle,
-                    border: Border.all(color: AppColors.grayscale.s200),
-                  ),
-                  alignment: Alignment.center,
-                  child: SizedBox(
-                    width: 24,
-                    height: 24,
-                    child: Image.asset(
-                      'lib/assets/images/target.png',
-                      fit: BoxFit.contain,
+            // 👉 오른쪽 아래 현위치 버튼 — 패널 높이에 따라 따라 올라감(패널 상태 유지)
+            ValueListenableBuilder<double>(
+              valueListenable: widget.bottomInsetListenable ?? ValueNotifier<double>(0),
+              builder: (_, panelH, __) {
+                final bottom = 16 + panelH;
+                return Positioned(
+                  right: 16,
+                  bottom: bottom,
+                  child: InkWell(
+                    onTap: _centerOnCurrentMarker, // 패널 유지한 채 센터링만
+                    borderRadius: BorderRadius.circular(32),
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: AppColors.grayscale.s30,
+                        shape: BoxShape.circle,
+                        border: Border.all(color: AppColors.grayscale.s200),
+                      ),
+                      alignment: Alignment.center,
+                      child: SizedBox(
+                        width: 24,
+                        height: 24,
+                        child: Image.asset(
+                          'lib/assets/images/target.png',
+                          fit: BoxFit.contain,
+                        ),
+                      ),
                     ),
                   ),
-                ),
-              ),
+                );
+              },
             ),
           ]);
         }),
