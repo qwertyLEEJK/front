@@ -179,7 +179,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (d != null && mounted) setState(() => _headingDeg = d);
     });
 
-    // 서버 폴링(2초)
+    // 서버 폴링(5s)
     _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => fetchPredictionAndUpdateAnchor());
 
     // PDR 보간(66ms)
@@ -223,7 +223,6 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 서버 포인트 수신 → 앵커 갱신
   void fetchPredictionAndUpdateAnchor() async {
     final request = _sensor.getCurrentSensorValues();
     final result = await PredictApi.fetchPrediction(request);
@@ -231,21 +230,46 @@ class _HomeScreenState extends State<HomeScreen> {
     if (result != null) {
       setState(() {
         selectedPredictionIndex = result.num;
-        _topK = (result.topKRaw);
+        _topK = result.topKRaw;
       });
 
       final idx = markerApiValues.indexOf(result.num);
       if (idx >= 0 && idx < markerList.length) {
-        final m = markerList[idx];
-        _anchorServerImgPx =
-            Offset((m['x'] as num).toDouble(), (m['y'] as num).toDouble());
+        // 새 서버 위치
+        final newAnchor = Offset(
+          (markerList[idx]['x'] as num).toDouble(),
+          (markerList[idx]['y'] as num).toDouble(),
+        );
 
+        // ===== 스무딩 필터 (미터 단위 threshold) =====
+        const double thresholdM = 5.0; // 👉 5m 이상 튀면 outlier
+        final double thresholdPx = thresholdM * _pxPerMeter;
+
+        final currentPos = _fusedPx ?? _anchorServerImgPx;
+        if (currentPos != null) {
+          final distPx = (newAnchor - currentPos).distance;
+
+          if (distPx > thresholdPx) {
+            // 🚨 outlier → 조금만 반영 (20%)
+            _anchorServerImgPx = Offset.lerp(currentPos, newAnchor, 0.2);
+          } else {
+            // ✅ 정상 → 그대로 반영
+            _anchorServerImgPx = newAnchor;
+          }
+        } else {
+          // 최초 실행 → 그냥 반영
+          _anchorServerImgPx = newAnchor;
+        }
+
+        // PDR anchor 갱신
         final st = _sensor.pdr.getState();
         _anchorPdrX = (st['posX'] as num).toDouble();
         _anchorPdrY = (st['posY'] as num).toDouble();
       }
     }
   }
+
+
 
   Offset _rotate(Offset v, double deg) {
     final r = deg * math.pi / 180.0, c = math.cos(r), s = math.sin(r);
