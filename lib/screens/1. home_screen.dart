@@ -50,6 +50,57 @@ final List<int> markerApiValues = [
   21,22,23,24,25,26,27,28,29
 ];
 
+// ===== (B) 실측 거리 데이터 (m) =====
+final Map<List<int>, double> realDistances = {
+  [21, 20]: 2.7,
+  [20, 19]: 4.5,
+  [19, 18]: 4.5,
+  [18, 17]: 4.5,
+  [17, 16]: 4.5,
+  [16, 15]: 4.5,
+  [15, 14]: 4.5,
+  [14, 13]: 4.5,
+  [13, 12]: 4.5,
+  [12, 11]: 4.5,
+  [11, 10]: 4.5,
+  [10, 9]: 4.5,
+  [9, 8]: 4.5,
+  [8, 7]: 4.5,
+  [7, 6]: 4.5,
+  [6, 5]: 4.5,
+  [5, 4]: 4.5,
+  [4, 3]: 4.5,
+  [3, 2]: 4.5,
+  [2, 1]: 4.5,
+  [10, 27]: 2.73,
+  [27, 28]: 2.25,
+  [28, 29]: 2.45,
+  [27, 26]: 3.6,
+  [26, 25]: 5.4,
+  [5, 24]: 3.6,
+  [24, 25]: 5.4,
+};
+
+// CAD 좌표 가져오기
+Offset _markerPos(int id) {
+  final idx = markerApiValues.indexOf(id);
+  final m = markerList[idx];
+  return Offset((m['x'] as num).toDouble(), (m['y'] as num).toDouble());
+}
+
+// pxPerMeter 자동 계산
+double computePxPerMeter() {
+  List<double> values = [];
+  realDistances.forEach((pair, realM) {
+    final pos1 = _markerPos(pair[0]);
+    final pos2 = _markerPos(pair[1]);
+    final cadDistPx = (pos1 - pos2).distance;
+    final pxPerM = cadDistPx / realM;
+    values.add(pxPerM);
+  });
+  return values.reduce((a, b) => a + b) / values.length;
+}
+
 // ===== 네이버 현재위치 스타일 마커 =====
 class NaverCurrentLocationMarker extends StatelessWidget {
   final double radius;
@@ -157,7 +208,7 @@ class _HomeScreenState extends State<HomeScreen> {
   Offset? _fusedPx;
 
   // 맵 보정
-  double _pxPerMeter = 20.0; // 1m -> px
+  double _pxPerMeter = 20.0; // 초기값, initState에서 보정됨
   double _mapRotationDeg = 0;
 
   // 실시간 UI 틱(≈15Hz)
@@ -170,6 +221,10 @@ class _HomeScreenState extends State<HomeScreen> {
   void initState() {
     super.initState();
 
+    // ✅ 실측 기반 자동 보정
+    _pxPerMeter = computePxPerMeter();
+    print("✅ 보정된 pxPerMeter = $_pxPerMeter");
+
     // LocationService 초기화
     Get.put(LocationService());
 
@@ -179,7 +234,7 @@ class _HomeScreenState extends State<HomeScreen> {
       if (d != null && mounted) setState(() => _headingDeg = d);
     });
 
-    // 서버 폴링(5s)
+    // 서버 폴링(2s)
     _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => fetchPredictionAndUpdateAnchor());
 
     // PDR 보간(66ms)
@@ -197,13 +252,11 @@ class _HomeScreenState extends State<HomeScreen> {
     super.dispose();
   }
 
-  // 바깥(지도 빈공간) 탭 → 패널 접기 (마커 탭은 아래 GestureDetector가 우선이므로 부모 onTap 실행 안됨)
   void _onMapBlankTap() {
     final collapse = widget.onRequestCollapsePanel;
     if (collapse != null) collapse();
   }
 
-  // 마커 탭 → 패널 접고 → SlideUpCard
   Future<void> _openPlaceSheet({int? markerId}) async {
     if (widget.onRequestCollapsePanel != null) {
       await widget.onRequestCollapsePanel!.call();
@@ -223,6 +276,7 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
+  // 서버 포인트 수신 → 앵커 갱신
   void fetchPredictionAndUpdateAnchor() async {
     final request = _sensor.getCurrentSensorValues();
     final result = await PredictApi.fetchPrediction(request);
@@ -235,29 +289,24 @@ class _HomeScreenState extends State<HomeScreen> {
 
       final idx = markerApiValues.indexOf(result.num);
       if (idx >= 0 && idx < markerList.length) {
-        // 새 서버 위치
         final newAnchor = Offset(
           (markerList[idx]['x'] as num).toDouble(),
           (markerList[idx]['y'] as num).toDouble(),
         );
 
         // ===== 스무딩 필터 (미터 단위 threshold) =====
-        const double thresholdM = 5.0; // 👉 5m 이상 튀면 outlier
+        const double thresholdM = 3.0; // 3m 이상 튀면 outlier
         final double thresholdPx = thresholdM * _pxPerMeter;
 
         final currentPos = _fusedPx ?? _anchorServerImgPx;
         if (currentPos != null) {
           final distPx = (newAnchor - currentPos).distance;
-
           if (distPx > thresholdPx) {
-            // 🚨 outlier → 조금만 반영 (20%)
             _anchorServerImgPx = Offset.lerp(currentPos, newAnchor, 0.2);
           } else {
-            // ✅ 정상 → 그대로 반영
             _anchorServerImgPx = newAnchor;
           }
         } else {
-          // 최초 실행 → 그냥 반영
           _anchorServerImgPx = newAnchor;
         }
 
@@ -269,8 +318,6 @@ class _HomeScreenState extends State<HomeScreen> {
     }
   }
 
-
-
   Offset _rotate(Offset v, double deg) {
     final r = deg * math.pi / 180.0, c = math.cos(r), s = math.sin(r);
     return Offset(c * v.dx - s * v.dy, s * v.dx + c * v.dy);
@@ -280,13 +327,13 @@ class _HomeScreenState extends State<HomeScreen> {
     if (!mounted || _anchorServerImgPx == null || _lastImageWidth == 0 || _lastImageHeight == 0) return;
 
     final st = _sensor.pdr.getState();
-    final dxM = (st['posX'] as num).toDouble() - _anchorPdrX; // East(+)
-    final dyM = (st['posY'] as num).toDouble() - _anchorPdrY; // North(+)
+    final dxM = (st['posX'] as num).toDouble() - _anchorPdrX;
+    final dyM = (st['posY'] as num).toDouble() - _anchorPdrY;
 
     final rotated = _rotate(Offset(dxM, dyM), _mapRotationDeg);
 
     final dxPx = rotated.dx * _pxPerMeter;
-    final dyPx = -rotated.dy * _pxPerMeter; // 화면 y는 아래로 +
+    final dyPx = -rotated.dy * _pxPerMeter;
 
     final anchorScaled = Offset(
       (_anchorServerImgPx!.dx / imageOriginWidth) * _lastImageWidth,
@@ -310,9 +357,9 @@ class _HomeScreenState extends State<HomeScreen> {
         (_anchorServerImgPx == null
             ? null
             : Offset(
-                (_anchorServerImgPx!.dx / imageOriginWidth) * _lastImageWidth,
-                (_anchorServerImgPx!.dy / imageOriginHeight) * _lastImageHeight,
-              ));
+          (_anchorServerImgPx!.dx / imageOriginWidth) * _lastImageWidth,
+          (_anchorServerImgPx!.dy / imageOriginHeight) * _lastImageHeight,
+        ));
     if (target == null) return;
 
     const scale = 1.0;
@@ -338,11 +385,10 @@ class _HomeScreenState extends State<HomeScreen> {
           _lastImageHeight = displayHeight;
 
           return Stack(children: [
-            // 지도 & 마커 (지도 빈공간 탭 = 바깥 탭으로 간주)
             Positioned.fill(
               child: GestureDetector(
                 behavior: HitTestBehavior.opaque,
-                onTap: _onMapBlankTap, // 빈 공간 탭 시 패널 접기
+                onTap: _onMapBlankTap,
                 child: InteractiveViewer(
                   transformationController: _transformationController,
                   panEnabled: true,
@@ -354,19 +400,15 @@ class _HomeScreenState extends State<HomeScreen> {
                     width: displayWidth,
                     height: displayHeight,
                     child: Stack(children: [
-                      // 지도 이미지
                       Image.asset(
                         'lib/assets/3map.png',
                         fit: BoxFit.fill,
                         width: displayWidth,
                         height: displayHeight,
                       ),
-
-                      // 서버 마커(모두 탭 가능, 번호 표시)
                       ...markerList.asMap().entries.map((entry) {
                         final i = entry.key;
                         final m = entry.value;
-
                         final markerApiValue = (i < markerApiValues.length)
                             ? markerApiValues[i]
                             : null;
@@ -410,11 +452,9 @@ class _HomeScreenState extends State<HomeScreen> {
                           ),
                         );
                       }),
-
-                      // 실시간 융합 마커(네이버 스타일, 탭 가능)
                       if (_fusedPx != null)
                         Positioned(
-                          left: _fusedPx!.dx - 28, // radius=28
+                          left: _fusedPx!.dx - 28,
                           top:  _fusedPx!.dy - 28,
                           child: GestureDetector(
                             onTap: () => _openPlaceSheet(markerId: selectedPredictionIndex),
@@ -431,8 +471,6 @@ class _HomeScreenState extends State<HomeScreen> {
                             ),
                           ),
                         ),
-
-                      // 좌상단: API값 + top_k
                       Positioned(
                         left: 8,
                         top: 8,
@@ -479,8 +517,6 @@ class _HomeScreenState extends State<HomeScreen> {
                 ),
               ),
             ),
-
-            // 👉 오른쪽 아래 현위치 버튼 — 패널 높이에 따라 따라 올라감(패널 상태 유지)
             ValueListenableBuilder<double>(
               valueListenable: widget.bottomInsetListenable ?? ValueNotifier<double>(0),
               builder: (_, panelH, __) {
@@ -489,7 +525,7 @@ class _HomeScreenState extends State<HomeScreen> {
                   right: 16,
                   bottom: bottom,
                   child: InkWell(
-                    onTap: _centerOnCurrentMarker, // 패널 유지한 채 센터링만
+                    onTap: _centerOnCurrentMarker,
                     borderRadius: BorderRadius.circular(32),
                     child: Container(
                       width: 52,
