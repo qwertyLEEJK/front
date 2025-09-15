@@ -10,10 +10,10 @@ import '1. home_screen.dart';
 import '2. profile_screen.dart';
 
 // 패널 콘텐츠
-import 'panel/1. home_panel.dart' show HomePanel;
-import 'panel/2. transport_panel.dart' show TransitPanel;
-import 'panel/3. map_panel.dart' show NearbyPanel;
-import 'panel/4. search_panel.dart' show DirectionsPanel;
+import 'panels/1. home_panel.dart' show HomePanel;
+import 'panels/2. transport_panel.dart' show TransitPanel;
+import 'panels/3. map_panel.dart' show NearbyPanel;
+import 'panels/4. search_panel.dart' show DirectionsPanel;
 
 enum PanelType { home, transit, nearby, directions }
 
