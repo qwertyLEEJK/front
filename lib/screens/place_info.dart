@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:midas_project/theme/app_colors.dart';
 import 'package:midas_project/theme/app_theme.dart';
-import 'package:midas_project/function/location_info.dart';
+import 'package:midas_project/function/location_service.dart';
 
 class SlideUpCard extends StatefulWidget {
   final VoidCallback onClose;

@@ -1,4 +1,4 @@
-// lib/screens/location_service.dart
+// 서버 통신용 (네트워크 + DTO) 이므로 파일 이름 수정
 import 'dart:convert';
 import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
