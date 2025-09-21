@@ -1,33 +1,18 @@
 import 'dart:async';
 import 'dart:math';
-
 import 'package:get/get.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 
-import 'PDRManager.dart';           // ✅ 외부 파일 사용
-import 'prediction_service.dart';  // PredictRequest/PredictApi
+import 'PDRManager.dart';
+import 'prediction_service.dart';
 
-/// ----------------------
-/// 센서 데이터 모델
-/// ----------------------
 class SensorData {
   double x, y, z;
   double pitch, roll, heading;
-
-  SensorData(
-    this.x,
-    this.y,
-    this.z, {
-    this.pitch = 0.0,
-    this.roll = 0.0,
-    this.heading = 0.0,
-  });
+  SensorData(this.x, this.y, this.z, {this.pitch = 0.0, this.roll = 0.0, this.heading = 0.0});
 }
 
-/// ----------------------
-/// Sensor Controller
-/// ----------------------
 class SensorController extends GetxController {
   var accelerometer = SensorData(0, 0, 0).obs;
   var magnetometer = SensorData(0, 0, 0).obs;
@@ -41,6 +26,10 @@ class SensorController extends GetxController {
 
   // ✅ PDR
   final PDRManager pdr = PDRManager();
+
+  // ✅ heading smoothing state
+  double _smoothedHeading = 0.0;
+  final double _alpha = 0.9; // 0.9 = 매우 부드럽게, 0.5 = 중간, 0.1 = 빠르게 반응
 
   @override
   void onInit() {
@@ -57,9 +46,7 @@ class SensorController extends GetxController {
       _updatePitchRoll(event.x, event.y, event.z);
 
       // PDR 업데이트
-      final accelMag =
-          sqrt(event.x * event.x + event.y * event.y + event.z * event.z) -
-              9.81;
+      final accelMag = sqrt(event.x * event.x + event.y * event.y + event.z * event.z) - 9.81;
       final now = DateTime.now().millisecondsSinceEpoch;
       pdr.update(accelMag.abs(), direction.value, now);
     });
@@ -84,12 +71,21 @@ class SensorController extends GetxController {
       });
     });
 
+    // ✅ Compass (heading) with smoothing
     _compassSub = FlutterCompass.events?.listen((event) {
-      final headingVal = event.heading ?? 0;
-      direction.value = headingVal;
+      final rawHeading = event.heading ?? 0;
+
+      // wrap-around 보정 (359 -> 0 넘어갈 때 점프 방지)
+      double diff = rawHeading - _smoothedHeading;
+      if (diff > 180) diff -= 360;
+      if (diff < -180) diff += 360;
+
+      _smoothedHeading = (_smoothedHeading + (1 - _alpha) * diff) % 360;
+
+      direction.value = _smoothedHeading;
       accelerometer.update((data) {
         if (data != null) {
-          data.heading = headingVal;
+          data.heading = _smoothedHeading;
         }
       });
     });
@@ -130,7 +126,6 @@ class SensorController extends GetxController {
     });
   }
 
-  /// ✅ 서버 요청에 넣을 센서+PDR 스냅샷
   PredictRequest getCurrentSensorValues() {
     final mag = magnetometer.value;
     final azimuth = direction.value;
