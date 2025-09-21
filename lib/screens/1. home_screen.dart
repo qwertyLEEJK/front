@@ -1,3 +1,4 @@
+// lib/screens/home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // ValueListenable
 import 'dart:async';
@@ -9,97 +10,7 @@ import '../function/prediction_service.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'dart:math' as math;
 import 'package:midas_project/screens/place_info.dart';
-import 'package:midas_project/function/location_info.dart';
-
-// ===== (A) 마커 좌표 / API 매핑 =====
-final List<Map<String, dynamic>> markerList = [
-  {"x": 3150, "y": 830}, //1
-  {"x": 3008, "y": 830}, //2
-  {"x": 2866, "y": 830}, //3
-  {"x": 2723, "y": 830}, //4
-  {"x": 2581, "y": 830}, //5
-  {"x": 2439, "y": 830}, //6
-  {"x": 2297, "y": 830}, //7
-  {"x": 2154, "y": 830}, //8
-  {"x": 2012, "y": 830}, //9
-  {"x": 1870, "y": 830}, //10
-  {"x": 1668, "y": 830}, //11
-  {"x": 1526, "y": 830}, //12
-  {"x": 1384, "y": 830}, //13
-  {"x": 1242, "y": 830}, //14
-  {"x": 1100, "y": 830}, //15
-  {"x": 958, "y": 830}, //16
-  {"x": 816, "y": 830}, //17
-  {"x": 674, "y": 830}, //18
-  {"x": 532, "y": 830}, //19
-  {"x": 390, "y": 830}, //20
-  {"x": 238, "y": 880}, //21
-  {"x": 2777, "y": 730}, //22
-  {"x": 2777, "y": 540}, //23
-  {"x": 1800, "y": 755}, //24
-  {"x": 1668, "y": 680}, //25
-  {"x": 1668, "y": 530}, //26
-  {"x": 1668, "y": 930}, //27
-  {"x": 1800, "y": 1000}, //28
-  {"x": 1800, "y": 1100}, //29
-];
-
-final List<int> markerApiValues = [
-  1,2,3,4,5,6,7,8,9,10,
-  11,12,13,14,15,16,17,18,19,20,
-  21,22,23,24,25,26,27,28,29
-];
-
-// ===== (B) 실측 거리 데이터 (m) =====
-final Map<List<int>, double> realDistances = {
-  [21, 20]: 2.7,
-  [20, 19]: 4.5,
-  [19, 18]: 4.5,
-  [18, 17]: 4.5,
-  [17, 16]: 4.5,
-  [16, 15]: 4.5,
-  [15, 14]: 4.5,
-  [14, 13]: 4.5,
-  [13, 12]: 4.5,
-  [12, 11]: 4.5,
-  [11, 10]: 4.5,
-  [10, 9]: 4.5,
-  [9, 8]: 4.5,
-  [8, 7]: 4.5,
-  [7, 6]: 4.5,
-  [6, 5]: 4.5,
-  [5, 4]: 4.5,
-  [4, 3]: 4.5,
-  [3, 2]: 4.5,
-  [2, 1]: 4.5,
-  [10, 27]: 2.73,
-  [27, 28]: 2.25,
-  [28, 29]: 2.45,
-  [27, 26]: 3.6,
-  [26, 25]: 5.4,
-  [5, 24]: 3.6,
-  [24, 25]: 5.4,
-};
-
-// CAD 좌표 가져오기
-Offset _markerPos(int id) {
-  final idx = markerApiValues.indexOf(id);
-  final m = markerList[idx];
-  return Offset((m['x'] as num).toDouble(), (m['y'] as num).toDouble());
-}
-
-// pxPerMeter 자동 계산
-double computePxPerMeter() {
-  List<double> values = [];
-  realDistances.forEach((pair, realM) {
-    final pos1 = _markerPos(pair[0]);
-    final pos2 = _markerPos(pair[1]);
-    final cadDistPx = (pos1 - pos2).distance;
-    final pxPerM = cadDistPx / realM;
-    values.add(pxPerM);
-  });
-  return values.reduce((a, b) => a + b) / values.length;
-}
+import 'package:midas_project/function/location_info.dart'; // ✅ 좌표/스케일 정보 불러오기
 
 // ===== 네이버 현재위치 스타일 마커 =====
 class NaverCurrentLocationMarker extends StatelessWidget {
@@ -171,9 +82,6 @@ class _HeadingTrianglePainter extends CustomPainter {
   bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }
 
-const double imageOriginWidth = 3508;
-const double imageOriginHeight = 1422;
-
 class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
@@ -224,9 +132,6 @@ class _HomeScreenState extends State<HomeScreen> {
     // ✅ 실측 기반 자동 보정
     _pxPerMeter = computePxPerMeter();
     print("✅ 보정된 pxPerMeter = $_pxPerMeter");
-
-    // LocationService 초기화
-    Get.put(LocationService());
 
     // 방위(heading)
     _compassSub = FlutterCompass.events?.listen((event) {
@@ -417,14 +322,14 @@ class _HomeScreenState extends State<HomeScreen> {
                         final my = (m['y'] as num).toDouble();
 
                         final scaledLeft = (mx / imageOriginWidth) * displayWidth;
-                        final scaledTop  = (my / imageOriginHeight) * displayHeight;
+                        final scaledTop = (my / imageOriginHeight) * displayHeight;
 
                         final isCurrent = selectedPredictionIndex != null && markerApiValue == selectedPredictionIndex;
                         final markerSize = 20.0;
 
                         return Positioned(
                           left: scaledLeft - (markerSize / 2),
-                          top:  scaledTop  - (markerSize / 2),
+                          top: scaledTop - (markerSize / 2),
                           child: GestureDetector(
                             behavior: HitTestBehavior.opaque,
                             onTap: () => _openPlaceSheet(markerId: markerApiValue),
@@ -455,7 +360,7 @@ class _HomeScreenState extends State<HomeScreen> {
                       if (_fusedPx != null)
                         Positioned(
                           left: _fusedPx!.dx - 28,
-                          top:  _fusedPx!.dy - 28,
+                          top: _fusedPx!.dy - 28,
                           child: GestureDetector(
                             onTap: () => _openPlaceSheet(markerId: selectedPredictionIndex),
                             child: Column(
