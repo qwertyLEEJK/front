@@ -52,6 +52,8 @@ flutter:
 
   assets:
     - lib/assets/images/
+    - lib/assets/data/nodes_final.csv
+    - lib/assets/data/edges_final.csv
     - lib/카카오톡.png
     - lib/구글.png
     - lib/네이버.png
