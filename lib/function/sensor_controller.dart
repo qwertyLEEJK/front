@@ -101,8 +101,12 @@ class SensorController extends GetxController {
   }
 
   double normalize180(double rad) {
-    while (rad <= -pi) rad += 2 * pi;
-    while (rad > pi) rad -= 2 * pi;
+    while (rad <= -pi) {
+      rad += 2 * pi;
+    }
+    while (rad > pi) {
+      rad -= 2 * pi;
+    }
     return rad;
   }
 

@@ -135,7 +135,7 @@ class _SlideUpCardState extends State<SlideUpCard> {
                         ),
                         if (floor > 0)
                           Text(
-                            "${floor}층 | ID: $markerId",
+                            "$floor층 | ID: $markerId",
                             style: AppTextStyles.body2_1.copyWith(
                               color: AppColors.grayscale.s500,
                               fontSize: 12,

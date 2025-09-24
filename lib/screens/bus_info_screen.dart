@@ -114,7 +114,7 @@ class _BusInfoScreenState extends State<BusInfoScreen> {
                         TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
                 const Divider(thickness: 1),
                 const SizedBox(height: 12),
-                ...busList.map(_busRow).toList(),
+                ...busList.map(_busRow),
               ],
             );
           },
