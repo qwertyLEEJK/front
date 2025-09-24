@@ -299,13 +299,13 @@ class _ProfileHeader extends StatelessWidget {
           ),
           const Spacer(),
           IconButton(
-            icon: Image.asset('lib/assets/images/bell.png', width: 24, height: 24),
+            icon: Image.asset('assets/images/bell.png', width: 24, height: 24),
             onPressed: () {
               // 알림 페이지 이동 (필요 시 구현)
             },
           ),
           IconButton(
-            icon: Image.asset('lib/assets/images/settings.png', width: 24, height: 24),
+            icon: Image.asset('assets/images/settings.png', width: 24, height: 24),
             onPressed: onTapSettings, // ✅ 로그아웃 확인 다이얼로그
           ),
         ],
@@ -343,7 +343,7 @@ class _CategoryTab extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Image.asset(
-              'lib/assets/images/${iconName}_${selected ? 'selected' : 'unselected'}.png',
+              'assets/images/${iconName}_${selected ? 'selected' : 'unselected'}.png',
               width: 24,
               height: 24,
             ),
@@ -425,7 +425,7 @@ class _FavoriteList extends StatelessWidget {
                       child: Row(
                         children: [
                           Image.asset(
-                            'lib/assets/images/${itemIconName}_selected.png',
+                            'assets/images/${itemIconName}_selected.png',
                             height: 24,
                             width: 24,
                             color: AppColors.grayscale.s900,

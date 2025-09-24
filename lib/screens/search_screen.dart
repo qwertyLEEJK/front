@@ -123,7 +123,7 @@ class _SearchScreenState extends State<SearchScreen> {
                       ),
                     ),
                     IconButton(
-                      icon: Image.asset('lib/assets/images/magnifer.png', width: 24, height: 24,),
+                      icon: Image.asset('assets/images/magnifer.png', width: 24, height: 24,),
                       onPressed: () => _handleSearch(_textController.text),
                     ),
                   ],
@@ -240,7 +240,7 @@ class _SearchScreenState extends State<SearchScreen> {
       subtitle = item.address ?? '주소 정보 없음';
       switch (item.placeCategory) {
         case 'home':
-          iconWidget = Image.asset('lib/assets/images/home_unselected.png', width: 24, height: 24);
+          iconWidget = Image.asset('assets/images/home_unselected.png', width: 24, height: 24);
           break;
         case 'work':
           iconData = Icons.work_outline;
@@ -250,7 +250,7 @@ class _SearchScreenState extends State<SearchScreen> {
       }
     } else if (item.type == FavoriteType.bus) {
       subtitle = '버스 번호: ${item.busNumber ?? '정보 없음'}';
-      iconWidget = Image.asset('lib/assets/images/bus_unselected.png', width: 24, height: 24);
+      iconWidget = Image.asset('assets/images/bus_unselected.png', width: 24, height: 24);
     } else if (item.type == FavoriteType.busStop) {
       title = item.stationName ?? '정류장 이름 없음';
       subtitle = '정류장 번호: ${item.stationId ?? '정보 없음'}';

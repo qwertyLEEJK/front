@@ -71,7 +71,7 @@ class CustomBottomNavBar extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Image.asset(
-              'lib/assets/images/${iconName}_${isSelected ? 'selected' : 'unselected'}.png',
+              'assets/images/${iconName}_${isSelected ? 'selected' : 'unselected'}.png',
               width: 24,
               height: 24,
             ),
