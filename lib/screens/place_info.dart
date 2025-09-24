@@ -89,7 +89,7 @@ class _SlideUpCardState extends State<SlideUpCard> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text("오류 발생", style: AppTextStyles.title6),
-                    Image.asset('lib/assets/images/fill_star.png',
+                    Image.asset('assets/images/fill_star.png',
                         width: 24, height: 24),
                   ],
                 ),
