@@ -59,7 +59,7 @@ final List<Map<String, dynamic>> roomData = [
 ];
 
 class RoomListScreen extends StatelessWidget {
-  const RoomListScreen({Key? key}) : super(key: key);
+  const RoomListScreen({super.key});
 
   @override
   Widget build(BuildContext context) {

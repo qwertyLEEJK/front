@@ -120,7 +120,7 @@ class _HomeScreenState extends State<HomeScreen> {
   double _pxPerMeter = 20.0;
   Offset _originPx = Offset.zero;
   bool _calibrated = false;
-  bool _flipY = false;
+  final bool _flipY = false;
 
   double _minX = 0, _minY = 0, _maxX = 0, _maxY = 0;
 
@@ -132,8 +132,8 @@ class _HomeScreenState extends State<HomeScreen> {
   final double _initialScale = 1.0;
   final Offset _initialPan = const Offset(0, -120);
 
-  Offset _bgOffset = const Offset(0, -80);
-  Offset _overlayOffset = const Offset(0, 380);
+  final Offset _bgOffset = const Offset(0, -80);
+  final Offset _overlayOffset = const Offset(0, 380);
 
   @override
   void initState() {

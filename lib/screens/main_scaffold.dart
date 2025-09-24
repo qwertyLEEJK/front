@@ -1,6 +1,5 @@
 import 'dart:async'; // 🔸 Completer / nextFrame 용
 import 'package:flutter/material.dart';
-import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:midas_project/theme/app_colors.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
