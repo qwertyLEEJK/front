@@ -61,7 +61,7 @@ lib/generated_plugin_registrant.dart
 lib/generated_plugin_registrant.dart
 windows/flutter/generated_plugin_registrant.*
 linux/flutter/generated_plugin_registrant.*
-
+ 
 # Flutter/Dart 관련
 .dart_tool/
 .packages
@@ -115,3 +115,8 @@ linux/flutter/generated_plugins.cmake
 
 # Web
 lib/generated_plugin_registrant.dart
+
+# -----------------
+# Custom ignore
+# -----------------
+android/app/src/build.gradle.kts

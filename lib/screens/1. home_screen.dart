@@ -1,22 +1,32 @@
-// lib/screens/home_screen.dart
+// lib/screens/1. home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart'; // ValueListenable
 import 'dart:async';
+import 'dart:math' as math;
 import 'package:get/get.dart';
-import 'package:midas_project/theme/app_colors.dart';
-import 'package:midas_project/theme/app_theme.dart';
+import 'package:flutter_compass/flutter_compass.dart';
+
 import '../function/sensor_controller.dart';
 import '../function/prediction_service.dart';
-import 'package:flutter_compass/flutter_compass.dart';
-import 'dart:math' as math;
-import 'package:midas_project/screens/place_info.dart';
-import 'package:midas_project/function/location_info.dart'; // ✅ 좌표/스케일 정보 불러오기
+import '../function/location_info.dart'; // CSV 기반 노드/엣지
+import 'place_info.dart';
+import 'package:midas_project/theme/app_colors.dart';
+import 'package:midas_project/theme/app_theme.dart';
+import 'package:flutter/gestures.dart'; // PointerDeviceKind
 
-// ===== 네이버 현재위치 스타일 마커 =====
+// ==== 도면 이미지 실제 픽셀 크기 (고정) ====
+const double kImageW = 3508;
+const double kImageH = 1422;
+
+// ==== 네이버 현재위치 스타일 마커 ====
 class NaverCurrentLocationMarker extends StatelessWidget {
   final double radius;
   final double headingDeg;
-  const NaverCurrentLocationMarker({super.key, this.radius = 28, this.headingDeg = 0});
+  const NaverCurrentLocationMarker({
+    super.key,
+    this.radius = 28,
+    this.headingDeg = 0,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -25,7 +35,6 @@ class NaverCurrentLocationMarker extends StatelessWidget {
       width: size,
       height: size,
       child: Stack(alignment: Alignment.center, children: [
-        // 정확도 원
         Container(
           width: size,
           height: size,
@@ -34,22 +43,21 @@ class NaverCurrentLocationMarker extends StatelessWidget {
             shape: BoxShape.circle,
           ),
         ),
-        // 방위 삼각형
         Transform.rotate(
           angle: (headingDeg + 180) * math.pi / 180.0,
           child: CustomPaint(size: const Size(20, 20), painter: _HeadingTrianglePainter()),
         ),
-        // 흰 링
         Container(
-          width: 18, height: 18,
+          width: 18,
+          height: 18,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             border: Border.all(color: AppColors.grayscale.s30, width: 2),
           ),
         ),
-        // 파란 점
         Container(
-          width: 10, height: 10,
+          width: 10,
+          height: 10,
           decoration: BoxDecoration(color: AppColors.secondary.s800, shape: BoxShape.circle),
         ),
       ]),
@@ -86,7 +94,7 @@ class HomeScreen extends StatefulWidget {
   const HomeScreen({
     super.key,
     this.bottomInsetListenable,
-    this.onRequestCollapsePanel, // 바깥 탭/마커 탭에서 호출
+    this.onRequestCollapsePanel,
   });
 
   final ValueListenable<double>? bottomInsetListenable;
@@ -100,52 +108,60 @@ class _HomeScreenState extends State<HomeScreen> {
   int? selectedPredictionIndex;
   Timer? _pollTimer;
 
-  final TransformationController _transformationController = TransformationController();
-  double _lastViewportWidth = 0, _lastViewportHeight = 0, _lastImageWidth = 0, _lastImageHeight = 0;
-
   double _headingDeg = 0.0;
   StreamSubscription<CompassEvent>? _compassSub;
 
   final SensorController _sensor = Get.put(SensorController());
 
-  // 서버 앵커 & PDR 앵커
-  Offset? _anchorServerImgPx;
+  Offset? _anchorServerPx;
   double _anchorPdrX = 0.0, _anchorPdrY = 0.0;
-
-  // 융합 결과
   Offset? _fusedPx;
 
-  // 맵 보정
-  double _pxPerMeter = 20.0; // 초기값, initState에서 보정됨
-  double _mapRotationDeg = 0;
+  double _pxPerMeter = 20.0;
+  Offset _originPx = Offset.zero;
+  bool _calibrated = false;
+  bool _flipY = false;
 
-  // 실시간 UI 틱(≈15Hz)
+  double _minX = 0, _minY = 0, _maxX = 0, _maxY = 0;
+
   Timer? _uiTicker;
-
-  // ★ top_k_results (서버 문자열 그대로)
   List<String> _topK = [];
+  LocationGraph? _graph;
+
+  final TransformationController _tfm = TransformationController();
+  final double _initialScale = 1.0;
+  final Offset _initialPan = const Offset(0, -120);
+
+  Offset _bgOffset = const Offset(0, -80);
+  Offset _overlayOffset = const Offset(0, 380);
 
   @override
   void initState() {
     super.initState();
 
-    // ✅ 실측 기반 자동 보정
-    _pxPerMeter = computePxPerMeter();
-    print("✅ 보정된 pxPerMeter = $_pxPerMeter");
+    loadGraphFromCsv().then((g) {
+      if (!mounted) return;
+      setState(() {
+        _graph = g;
+      });
+      _calibrateScaleAndOrigin();
+    });
 
-    // 방위(heading)
     _compassSub = FlutterCompass.events?.listen((event) {
       final d = event.heading;
       if (d != null && mounted) setState(() => _headingDeg = d);
     });
 
-    // 서버 폴링(2s)
     _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => fetchPredictionAndUpdateAnchor());
-
-    // PDR 보간(66ms)
     _uiTicker = Timer.periodic(const Duration(milliseconds: 66), (_) => _updateFusedPosition());
 
     fetchPredictionAndUpdateAnchor();
+
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _tfm.value = Matrix4.identity()
+        ..translate(_initialPan.dx, _initialPan.dy)
+        ..scale(_initialScale);
+    });
   }
 
   @override
@@ -153,13 +169,8 @@ class _HomeScreenState extends State<HomeScreen> {
     _uiTicker?.cancel();
     _pollTimer?.cancel();
     _compassSub?.cancel();
-    _transformationController.dispose();
+    _tfm.dispose();
     super.dispose();
-  }
-
-  void _onMapBlankTap() {
-    final collapse = widget.onRequestCollapsePanel;
-    if (collapse != null) collapse();
   }
 
   Future<void> _openPlaceSheet({int? markerId}) async {
@@ -181,46 +192,46 @@ class _HomeScreenState extends State<HomeScreen> {
     );
   }
 
-  // 서버 포인트 수신 → 앵커 갱신
   void fetchPredictionAndUpdateAnchor() async {
     final request = _sensor.getCurrentSensorValues();
     final result = await PredictApi.fetchPrediction(request);
 
-    if (result != null) {
+    if (result != null && _graph != null) {
       setState(() {
         selectedPredictionIndex = result.num;
         _topK = result.topKRaw;
       });
 
-      final idx = markerApiValues.indexOf(result.num);
-      if (idx >= 0 && idx < markerList.length) {
-        final newAnchor = Offset(
-          (markerList[idx]['x'] as num).toDouble(),
-          (markerList[idx]['y'] as num).toDouble(),
-        );
+      final node = _graph!.getNode(result.num);
+      final newAnchor = _meterToPx(node.x, node.y);
 
-        // ===== 스무딩 필터 (미터 단위 threshold) =====
-        const double thresholdM = 3.0; // 3m 이상 튀면 outlier
-        final double thresholdPx = thresholdM * _pxPerMeter;
+      const double thresholdM = 3.0;
+      final double thresholdPx = thresholdM * _pxPerMeter;
 
-        final currentPos = _fusedPx ?? _anchorServerImgPx;
-        if (currentPos != null) {
-          final distPx = (newAnchor - currentPos).distance;
-          if (distPx > thresholdPx) {
-            _anchorServerImgPx = Offset.lerp(currentPos, newAnchor, 0.2);
-          } else {
-            _anchorServerImgPx = newAnchor;
-          }
+      final currentPos = _fusedPx ?? _anchorServerPx;
+      if (currentPos != null) {
+        final distPx = (newAnchor - currentPos).distance;
+        if (distPx > thresholdPx) {
+          _anchorServerPx = Offset.lerp(currentPos, newAnchor, 0.2);
         } else {
-          _anchorServerImgPx = newAnchor;
+          _anchorServerPx = newAnchor;
         }
-
-        // PDR anchor 갱신
-        final st = _sensor.pdr.getState();
-        _anchorPdrX = (st['posX'] as num).toDouble();
-        _anchorPdrY = (st['posY'] as num).toDouble();
+      } else {
+        _anchorServerPx = newAnchor;
       }
+
+      final st = _sensor.pdr.getState();
+      _anchorPdrX = (st['posX'] as num).toDouble();
+      _anchorPdrY = (st['posY'] as num).toDouble();
     }
+  }
+
+  Offset _meterToPx(double xM, double yM) {
+    double y = yM;
+    if (_flipY) {
+      y = _minY + (_maxY - yM);
+    }
+    return _originPx + Offset(xM * _pxPerMeter, y * _pxPerMeter);
   }
 
   Offset _rotate(Offset v, double deg) {
@@ -229,233 +240,138 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 
   void _updateFusedPosition() {
-    if (!mounted || _anchorServerImgPx == null || _lastImageWidth == 0 || _lastImageHeight == 0) return;
-
+    if (!mounted || _anchorServerPx == null) return;
     final st = _sensor.pdr.getState();
     final dxM = (st['posX'] as num).toDouble() - _anchorPdrX;
     final dyM = (st['posY'] as num).toDouble() - _anchorPdrY;
 
-    final rotated = _rotate(Offset(dxM, dyM), _mapRotationDeg);
-
+    final rotated = _rotate(Offset(dxM, dyM), 0);
     final dxPx = rotated.dx * _pxPerMeter;
     final dyPx = -rotated.dy * _pxPerMeter;
 
-    final anchorScaled = Offset(
-      (_anchorServerImgPx!.dx / imageOriginWidth) * _lastImageWidth,
-      (_anchorServerImgPx!.dy / imageOriginHeight) * _lastImageHeight,
-    );
-
-    final fused = anchorScaled + Offset(dxPx, dyPx);
-
+    final fused = _anchorServerPx! + Offset(dxPx, dyPx);
     setState(() {
-      _fusedPx = Offset(
-        fused.dx.clamp(0.0, _lastImageWidth),
-        fused.dy.clamp(0.0, _lastImageHeight),
-      );
+      _fusedPx = fused;
     });
   }
 
-  void _centerOnCurrentMarker() {
-    if (_lastViewportWidth == 0 || _lastViewportHeight == 0 || _lastImageWidth == 0 || _lastImageHeight == 0) return;
+  void _calibrateScaleAndOrigin() {
+    if (_graph == null || _graph!.nodes.isEmpty) return;
+    if (_calibrated) return;
 
-    final target = _fusedPx ??
-        (_anchorServerImgPx == null
-            ? null
-            : Offset(
-          (_anchorServerImgPx!.dx / imageOriginWidth) * _lastImageWidth,
-          (_anchorServerImgPx!.dy / imageOriginHeight) * _lastImageHeight,
-        ));
-    if (target == null) return;
+    double minX = double.infinity, minY = double.infinity;
+    double maxX = -double.infinity, maxY = -double.infinity;
+    for (final n in _graph!.nodes) {
+      if (n.x < minX) minX = n.x;
+      if (n.y < minY) minY = n.y;
+      if (n.x > maxX) maxX = n.x;
+      if (n.y > maxY) maxY = n.y;
+    }
+    _minX = minX; _minY = minY; _maxX = maxX; _maxY = maxY;
 
-    const scale = 1.0;
-    final tx = (_lastViewportWidth / 2) - (target.dx * scale);
-    final ty = (_lastViewportHeight / 2) - (target.dy * scale);
+    final wM = (maxX - minX).abs();
+    final hM = (maxY - minY).abs();
+    if (wM <= 0 || hM <= 0) return;
 
-    _transformationController.value = Matrix4.identity()
-      ..translate(tx, ty)
-      ..scale(scale);
+    const padPx = 24.0;
+    final availW = kImageW - padPx * 2;
+    final availH = kImageH - padPx * 2;
+    final scaleX = availW / wM;
+    final scaleY = availH / hM;
+    _pxPerMeter = math.min(scaleX, scaleY);
+
+    _originPx = Offset(
+      padPx - minX * _pxPerMeter,
+      padPx - (_flipY ? (minY + (maxY - minY)) : minY) * _pxPerMeter,
+    );
+
+    _calibrated = true;
   }
 
   @override
   Widget build(BuildContext context) {
+    final scrollBehavior = const MaterialScrollBehavior().copyWith(
+      dragDevices: {
+        PointerDeviceKind.touch,
+        PointerDeviceKind.mouse,
+        PointerDeviceKind.stylus,
+        PointerDeviceKind.unknown,
+      },
+    );
+
     return Scaffold(
       body: SafeArea(
-        child: LayoutBuilder(builder: (context, constraints) {
-          final displayHeight = constraints.maxHeight;
-          final displayWidth = imageOriginWidth * (displayHeight / imageOriginHeight);
-
-          _lastViewportWidth = constraints.maxWidth;
-          _lastViewportHeight = displayHeight;
-          _lastImageWidth = displayWidth;
-          _lastImageHeight = displayHeight;
-
-          return Stack(children: [
-            Positioned.fill(
-              child: GestureDetector(
-                behavior: HitTestBehavior.opaque,
-                onTap: _onMapBlankTap,
-                child: InteractiveViewer(
-                  transformationController: _transformationController,
-                  panEnabled: true,
-                  minScale: 1,
-                  maxScale: 5,
-                  constrained: false,
-                  boundaryMargin: const EdgeInsets.all(200),
-                  child: SizedBox(
-                    width: displayWidth,
-                    height: displayHeight,
-                    child: Stack(children: [
-                      Image.asset(
-                        'lib/assets/3map.png',
+        child: ScrollConfiguration(
+          behavior: scrollBehavior,
+          child: InteractiveViewer(
+            transformationController: _tfm,
+            minScale: 0.3,
+            maxScale: 5.0,
+            constrained: false,
+            boundaryMargin: const EdgeInsets.all(200),
+            panEnabled: true,
+            scaleEnabled: true,
+            child: SizedBox(
+              width: kImageW,
+              height: kImageH,
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Positioned(
+                    left: _bgOffset.dx,
+                    top:  _bgOffset.dy,
+                    child: SizedBox(
+                      width: kImageW,
+                      height: kImageH,
+                      child: Image.asset(
+                        'assets/3map.png',
                         fit: BoxFit.fill,
-                        width: displayWidth,
-                        height: displayHeight,
-                      ),
-                      ...markerList.asMap().entries.map((entry) {
-                        final i = entry.key;
-                        final m = entry.value;
-                        final markerApiValue = (i < markerApiValues.length)
-                            ? markerApiValues[i]
-                            : null;
-
-                        final mx = (m['x'] as num).toDouble();
-                        final my = (m['y'] as num).toDouble();
-
-                        final scaledLeft = (mx / imageOriginWidth) * displayWidth;
-                        final scaledTop = (my / imageOriginHeight) * displayHeight;
-
-                        final isCurrent = selectedPredictionIndex != null && markerApiValue == selectedPredictionIndex;
-                        final markerSize = 20.0;
-
-                        return Positioned(
-                          left: scaledLeft - (markerSize / 2),
-                          top: scaledTop - (markerSize / 2),
-                          child: GestureDetector(
-                            behavior: HitTestBehavior.opaque,
-                            onTap: () => _openPlaceSheet(markerId: markerApiValue),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Container(
-                                  width: markerSize,
-                                  height: markerSize,
-                                  decoration: BoxDecoration(
-                                    color: isCurrent
-                                        ? AppColors.secondary.s800
-                                        : AppColors.secondary.s800.withOpacity(0.6),
-                                    shape: BoxShape.circle,
-                                    border: Border.all(color: AppColors.grayscale.s30, width: 2),
-                                  ),
-                                ),
-                                const SizedBox(height: 2),
-                                Text(
-                                  "${markerApiValue ?? '-'}",
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                                ),
-                              ],
-                            ),
-                          ),
-                        );
-                      }),
-                      if (_fusedPx != null)
-                        Positioned(
-                          left: _fusedPx!.dx - 28,
-                          top: _fusedPx!.dy - 28,
-                          child: GestureDetector(
-                            onTap: () => _openPlaceSheet(markerId: selectedPredictionIndex),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                NaverCurrentLocationMarker(radius: 28, headingDeg: _headingDeg),
-                                const SizedBox(height: 2),
-                                Text(
-                                  "${selectedPredictionIndex ?? '-'}",
-                                  style: const TextStyle(fontSize: 11, fontWeight: FontWeight.w600),
-                                ),
-                              ],
-                            ),
-                          ),
-                        ),
-                      Positioned(
-                        left: 8,
-                        top: 8,
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                              decoration: BoxDecoration(
-                                color: AppColors.grayscale.s900.withOpacity(0.6),
-                                borderRadius: BorderRadius.circular(8),
-                              ),
-                              child: Text(
-                                'API값: ${selectedPredictionIndex ?? '-'}',
-                                style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s30),
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            if (_topK.isNotEmpty)
-                              Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                                decoration: BoxDecoration(
-                                  color: AppColors.grayscale.s900.withOpacity(0.6),
-                                  borderRadius: BorderRadius.circular(8),
-                                ),
-                                child: Column(
-                                  crossAxisAlignment: CrossAxisAlignment.start,
-                                  children: List.generate(_topK.length, (i) {
-                                    return Padding(
-                                      padding: const EdgeInsets.only(bottom: 2),
-                                      child: Text(
-                                        _topK[i],
-                                        style: AppTextStyles.title7.copyWith(color: AppColors.grayscale.s30),
-                                      ),
-                                    );
-                                  }),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
-                    ]),
-                  ),
-                ),
-              ),
-            ),
-            ValueListenableBuilder<double>(
-              valueListenable: widget.bottomInsetListenable ?? ValueNotifier<double>(0),
-              builder: (_, panelH, __) {
-                final bottom = 16 + panelH;
-                return Positioned(
-                  right: 16,
-                  bottom: bottom,
-                  child: InkWell(
-                    onTap: _centerOnCurrentMarker,
-                    borderRadius: BorderRadius.circular(32),
-                    child: Container(
-                      width: 52,
-                      height: 52,
-                      decoration: BoxDecoration(
-                        color: AppColors.grayscale.s30,
-                        shape: BoxShape.circle,
-                        border: Border.all(color: AppColors.grayscale.s200),
-                      ),
-                      alignment: Alignment.center,
-                      child: SizedBox(
-                        width: 24,
-                        height: 24,
-                        child: Image.asset(
-                          'lib/assets/images/target.png',
-                          fit: BoxFit.contain,
-                        ),
                       ),
                     ),
                   ),
-                );
-              },
+                  if (_graph != null)
+                    ..._graph!.nodes.map((n) {
+                      final posPx = _meterToPx(n.x, n.y) + _overlayOffset;
+                      final isCurrent = (selectedPredictionIndex != null && n.id == selectedPredictionIndex);
+                      return Positioned(
+                        left: posPx.dx - 10,
+                        top:  posPx.dy - 10,
+                        child: GestureDetector(
+                          onTap: () => _openPlaceSheet(markerId: n.id),
+                          child: Container(
+                            width: 20,
+                            height: 20,
+                            decoration: BoxDecoration(
+                              color: isCurrent
+                                  ? Colors.orange
+                                  : (n.type == "marker" ? Colors.blue : Colors.red),
+                              shape: BoxShape.circle,
+                              border: Border.all(color: Colors.white, width: 1),
+                            ),
+                            child: Center(
+                              child: Text(
+                                "${n.id}",
+                                style: const TextStyle(fontSize: 8, color: Colors.white),
+                              ),
+                            ),
+                          ),
+                        ),
+                      );
+                    }),
+                  if (_fusedPx != null)
+                    Positioned(
+                      left: (_fusedPx! + _overlayOffset).dx - 28,
+                      top:  (_fusedPx! + _overlayOffset).dy - 28,
+                      child: NaverCurrentLocationMarker(
+                        radius: 28,
+                        headingDeg: _headingDeg,
+                      ),
+                    ),
+                ],
+              ),
             ),
-          ]);
-        }),
+          ),
+        ),
       ),
     );
   }
