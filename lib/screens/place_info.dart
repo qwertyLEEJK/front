@@ -26,7 +26,7 @@ class _SlideUpCardState extends State<SlideUpCard> {
     super.initState();
     // LocationService 인스턴스 가져오기 (없으면 생성)
     _locationService = Get.find<LocationService>();
-    
+
     // markerId가 있으면 해당 위치 정보 로드
     if (widget.markerId != null) {
       _locationService.setMarkerId(widget.markerId);

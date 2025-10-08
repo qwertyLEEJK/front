@@ -1,15 +1,43 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
+import 'package:flutter_naver_map/flutter_naver_map.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
+import 'package:get/get.dart';
 import 'package:midas_project/api/api_client.dart';
 import 'package:midas_project/theme/app_theme.dart';
-import 'screens/auth_choice_screen.dart';         // 로그인/회원가입 선택 화면
-import 'screens/main_scaffold.dart';                      // ✅ 홈: MainScaffold 로 이동
+import 'package:midas_project/function/sensor_controller.dart';
+import 'package:midas_project/function/location_service.dart';
+import 'screens/auth_choice_screen.dart';
+import 'screens/main_scaffold.dart';
 
 import 'package:kakao_flutter_sdk_common/kakao_flutter_sdk_common.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
+  
+  // ✅ .env 파일 로드
+  await dotenv.load(fileName: ".env");
+  
+  // ✅ 네이버 맵 SDK 초기화
+  final naverMapClientId = dotenv.env['NAVER_MAPS_API_KEY'] ?? '';
+  if (naverMapClientId.isNotEmpty) {
+    await NaverMapSdk.instance.initialize(
+      clientId: naverMapClientId,
+      onAuthFailed: (ex) {
+        debugPrint('네이버맵 인증 실패: $ex');
+      },
+    );
+  } else {
+    debugPrint('⚠️ NAVER_MAPS_API_KEY가 .env 파일에 없습니다.');
+  }
+  
+  // ✅ GetX 컨트롤러 초기화
+  Get.put(SensorController());
+  Get.put(LocationService());
+  
+  // 카카오 SDK 초기화
   KakaoSdk.init(nativeAppKey: 'd3d5da14ab19ade1029f19a41f04e173');
+  
   runApp(const MyApp());
 }
 
