@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_naver_map/flutter_naver_map.dart';
 import 'package:geolocator/geolocator.dart';
-import 'package:midas_project/function/sensor_controller.dart';
 
 class OutdoorMapScreen extends StatefulWidget {
   const OutdoorMapScreen({super.key});
@@ -12,7 +11,8 @@ class OutdoorMapScreen extends StatefulWidget {
 
 class _OutdoorMapScreenState extends State<OutdoorMapScreen> {
   NaverMapController? _controller;
-  bool _mapInitialized = false; // ✅ onMapReady 반복 방지용 플래그
+  bool _mapInitialized = false;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -21,15 +21,34 @@ class _OutdoorMapScreenState extends State<OutdoorMapScreen> {
   }
 
   Future<void> _initLocationPermission() async {
-    bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
-    if (!serviceEnabled) {
-      await Geolocator.openLocationSettings();
-      return;
-    }
+    try {
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('위치 서비스가 비활성화되어 있습니다.');
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
 
-    LocationPermission permission = await Geolocator.checkPermission();
-    if (permission == LocationPermission.denied) {
-      permission = await Geolocator.requestPermission();
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied) {
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          debugPrint('위치 권한이 거부되었습니다.');
+          if (mounted) setState(() => _isLoading = false);
+          return;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        debugPrint('위치 권한이 영구적으로 거부되었습니다.');
+        if (mounted) setState(() => _isLoading = false);
+        return;
+      }
+
+      if (mounted) setState(() => _isLoading = false);
+    } catch (e) {
+      debugPrint('위치 권한 확인 오류: $e');
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -37,6 +56,7 @@ class _OutdoorMapScreenState extends State<OutdoorMapScreen> {
     try {
       return await Geolocator.getCurrentPosition(
         desiredAccuracy: LocationAccuracy.high,
+        timeLimit: const Duration(seconds: 5),
       );
     } catch (e) {
       debugPrint('위치 불러오기 실패: $e');
@@ -44,44 +64,60 @@ class _OutdoorMapScreenState extends State<OutdoorMapScreen> {
     }
   }
 
+  void _onMapReady(NaverMapController controller) {
+    if (_mapInitialized) return;
+    _mapInitialized = true;
+    _controller = controller;
+
+    // 비동기 작업을 별도로 처리
+    _moveToCurrentLocation();
+  }
+
+  Future<void> _moveToCurrentLocation() async {
+    if (_controller == null) return;
+
+    try {
+      final pos = await _getCurrentPosition();
+      if (pos != null && mounted && _controller != null) {
+        await _controller!.updateCamera(
+          NCameraUpdate.scrollAndZoomTo(
+            target: NLatLng(pos.latitude, pos.longitude),
+            zoom: 16,
+          ),
+        );
+      }
+    } catch (e) {
+      debugPrint('카메라 이동 오류: $e');
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
-    return Stack(
-      children: [
-        NaverMap(
-          onMapReady: (controller) async {
-            if (_mapInitialized) return; // ✅ 무한 호출 방지
-            _mapInitialized = true;
+    if (_isLoading) {
+      return const Scaffold(
+        body: Center(
+          child: CircularProgressIndicator(),
+        ),
+      );
+    }
 
-            _controller = controller;
-            final pos = await _getCurrentPosition();
-            if (pos != null && mounted) {
-              controller.updateCamera(
-                NCameraUpdate.scrollAndZoomTo(
-                  target: NLatLng(pos.latitude, pos.longitude),
-                  zoom: 16,
-                ),
-              );
-            }
-          },
-          options: const NaverMapViewOptions(
-            initialCameraPosition: NCameraPosition(
-              target: NLatLng(37.5666102, 126.9783881), // 기본 서울 좌표
-              zoom: 15,
+    return Scaffold(
+      body: Stack(
+        children: [
+          NaverMap(
+            onMapReady: _onMapReady,
+            options: const NaverMapViewOptions(
+              initialCameraPosition: NCameraPosition(
+                target: NLatLng(35.8355, 128.7537), // 영남대 좌표
+                zoom: 15,
+              ),
+              indoorEnable: false,
+              locationButtonEnable: true,
+              consumeSymbolTapEvents: false,
             ),
           ),
-        ),
-        Positioned(
-          top: 40,
-          left: 16,
-          child: ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-            },
-            child: const Text('뒤로'),
-          ),
-        ),
-      ],
+        ],
+      ),
     );
   }
 

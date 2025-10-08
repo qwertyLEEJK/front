@@ -13,11 +13,9 @@ import 'package:midas_project/theme/app_colors.dart';
 import 'package:flutter/gestures.dart';
 import 'package:midas_project/function/sensor_controller.dart';
 
-// ==== 도면 이미지 실제 픽셀 크기 (고정) ====
 const double kImageW = 3508;
 const double kImageH = 1422;
 
-// ==== 네이버 현재위치 스타일 마커 ====
 class NaverCurrentLocationMarker extends StatelessWidget {
   final double radius;
   final double headingDeg;
@@ -110,7 +108,7 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
   double _headingDeg = 0.0;
   StreamSubscription<CompassEvent>? _compassSub;
 
-  final SensorController _sensor = Get.find<SensorController>();
+  SensorController? _sensor;
 
   Offset? _anchorServerPx;
   double _anchorPdrX = 0.0, _anchorPdrY = 0.0;
@@ -126,6 +124,7 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
   Timer? _uiTicker;
   List<String> _topK = [];
   LocationGraph? _graph;
+  bool _isLoading = true;
 
   final TransformationController _tfm = TransformationController();
   final double _initialScale = 1.0;
@@ -137,30 +136,69 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
   @override
   void initState() {
     super.initState();
+    _initializeAsync();
+  }
 
-    loadGraphFromCsv().then((g) {
+  Future<void> _initializeAsync() async {
+    try {
+      // SensorController 가져오기 (없으면 생성)
+      try {
+        _sensor = Get.find<SensorController>();
+      } catch (e) {
+        debugPrint('SensorController not found, creating new instance');
+        _sensor = Get.put(SensorController());
+      }
+
+      // 그래프 로드
+      final g = await loadGraphFromCsv();
       if (!mounted) return;
+
       setState(() {
         _graph = g;
+        _isLoading = false;
       });
+
       _calibrateScaleAndOrigin();
-    });
 
-    _compassSub = FlutterCompass.events?.listen((event) {
-      final d = event.heading;
-      if (d != null && mounted) setState(() => _headingDeg = d);
-    });
+      // Compass 구독
+      _compassSub = FlutterCompass.events?.listen((event) {
+        final d = event.heading;
+        if (d != null && mounted) {
+          setState(() => _headingDeg = d);
+        }
+      });
 
-    _pollTimer = Timer.periodic(const Duration(seconds: 2), (_) => fetchPredictionAndUpdateAnchor());
-    _uiTicker = Timer.periodic(const Duration(milliseconds: 66), (_) => _updateFusedPosition());
+      // 타이머 시작 (약간의 지연 후)
+      await Future.delayed(const Duration(milliseconds: 500));
+      if (!mounted) return;
 
-    fetchPredictionAndUpdateAnchor();
+      _pollTimer = Timer.periodic(
+        const Duration(seconds: 2),
+        (_) => fetchPredictionAndUpdateAnchor(),
+      );
 
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _tfm.value = Matrix4.identity()
-        ..translate(_initialPan.dx, _initialPan.dy)
-        ..scale(_initialScale);
-    });
+      _uiTicker = Timer.periodic(
+        const Duration(milliseconds: 66),
+        (_) => _updateFusedPosition(),
+      );
+
+      // 초기 예측
+      fetchPredictionAndUpdateAnchor();
+
+      // 카메라 초기화
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        if (mounted) {
+          _tfm.value = Matrix4.identity()
+            ..translate(_initialPan.dx, _initialPan.dy)
+            ..scale(_initialScale);
+        }
+      });
+    } catch (e) {
+      debugPrint('IndoorMap 초기화 오류: $e');
+      if (mounted) {
+        setState(() => _isLoading = false);
+      }
+    }
   }
 
   @override
@@ -191,37 +229,43 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
     );
   }
 
-  void fetchPredictionAndUpdateAnchor() async {
-    final request = _sensor.getCurrentSensorValues();
-    final result = await PredictApi.fetchPrediction(request);
+  Future<void> fetchPredictionAndUpdateAnchor() async {
+    if (_sensor == null || _graph == null) return;
 
-    if (result != null && _graph != null) {
-      setState(() {
-        selectedPredictionIndex = result.num;
-        _topK = result.topKRaw;
-      });
+    try {
+      final request = _sensor!.getCurrentSensorValues();
+      final result = await PredictApi.fetchPrediction(request);
 
-      final node = _graph!.getNode(result.num);
-      final newAnchor = _meterToPx(node.x, node.y);
+      if (result != null && mounted) {
+        setState(() {
+          selectedPredictionIndex = result.num;
+          _topK = result.topKRaw;
+        });
 
-      const double thresholdM = 3.0;
-      final double thresholdPx = thresholdM * _pxPerMeter;
+        final node = _graph!.getNode(result.num);
+        final newAnchor = _meterToPx(node.x, node.y);
 
-      final currentPos = _fusedPx ?? _anchorServerPx;
-      if (currentPos != null) {
-        final distPx = (newAnchor - currentPos).distance;
-        if (distPx > thresholdPx) {
-          _anchorServerPx = Offset.lerp(currentPos, newAnchor, 0.2);
+        const double thresholdM = 3.0;
+        final double thresholdPx = thresholdM * _pxPerMeter;
+
+        final currentPos = _fusedPx ?? _anchorServerPx;
+        if (currentPos != null) {
+          final distPx = (newAnchor - currentPos).distance;
+          if (distPx > thresholdPx) {
+            _anchorServerPx = Offset.lerp(currentPos, newAnchor, 0.2);
+          } else {
+            _anchorServerPx = newAnchor;
+          }
         } else {
           _anchorServerPx = newAnchor;
         }
-      } else {
-        _anchorServerPx = newAnchor;
-      }
 
-      final st = _sensor.pdr.getState();
-      _anchorPdrX = (st['posX'] as num).toDouble();
-      _anchorPdrY = (st['posY'] as num).toDouble();
+        final st = _sensor!.pdr.getState();
+        _anchorPdrX = (st['posX'] as num).toDouble();
+        _anchorPdrY = (st['posY'] as num).toDouble();
+      }
+    } catch (e) {
+      debugPrint('Prediction 오류: $e');
     }
   }
 
@@ -239,19 +283,27 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
   }
 
   void _updateFusedPosition() {
-    if (!mounted || _anchorServerPx == null) return;
-    final st = _sensor.pdr.getState();
-    final dxM = (st['posX'] as num).toDouble() - _anchorPdrX;
-    final dyM = (st['posY'] as num).toDouble() - _anchorPdrY;
+    if (!mounted || _anchorServerPx == null || _sensor == null) return;
 
-    final rotated = _rotate(Offset(dxM, dyM), 0);
-    final dxPx = rotated.dx * _pxPerMeter;
-    final dyPx = -rotated.dy * _pxPerMeter;
+    try {
+      final st = _sensor!.pdr.getState();
+      final dxM = (st['posX'] as num).toDouble() - _anchorPdrX;
+      final dyM = (st['posY'] as num).toDouble() - _anchorPdrY;
 
-    final fused = _anchorServerPx! + Offset(dxPx, dyPx);
-    setState(() {
-      _fusedPx = fused;
-    });
+      final rotated = _rotate(Offset(dxM, dyM), 0);
+      final dxPx = rotated.dx * _pxPerMeter;
+      final dyPx = -rotated.dy * _pxPerMeter;
+
+      final fused = _anchorServerPx! + Offset(dxPx, dyPx);
+      
+      if (mounted) {
+        setState(() {
+          _fusedPx = fused;
+        });
+      }
+    } catch (e) {
+      debugPrint('Position update 오류: $e');
+    }
   }
 
   void _calibrateScaleAndOrigin() {
@@ -289,6 +341,12 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
 
   @override
   Widget build(BuildContext context) {
+    if (_isLoading) {
+      return const Center(
+        child: CircularProgressIndicator(),
+      );
+    }
+
     final scrollBehavior = const MaterialScrollBehavior().copyWith(
       dragDevices: {
         PointerDeviceKind.touch,
