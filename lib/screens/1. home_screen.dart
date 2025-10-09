@@ -2,6 +2,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:midas_project/theme/app_colors.dart';
+import 'package:midas_project/theme/app_theme.dart';
 import 'package:midas_project/screens/indoor_map_screen.dart';
 import 'package:midas_project/screens/outdoor_map_screen.dart';
 
@@ -48,7 +49,7 @@ class _HomeScreenState extends State<HomeScreen> {
                 borderRadius: BorderRadius.circular(12),
                 child: Container(
                   decoration: BoxDecoration(
-                    color: Colors.white,
+                    color: AppColors.grayscale.s30,
                     borderRadius: BorderRadius.circular(12),
                     border: Border.all(color: AppColors.grayscale.s200),
                   ),
@@ -120,15 +121,13 @@ class _MapToggleButton extends StatelessWidget {
             Icon(
               icon,
               size: 20,
-              color: isSelected ? Colors.white : AppColors.grayscale.s600,
+              color: isSelected ? AppColors.grayscale.s30 : AppColors.grayscale.s600,
             ),
             const SizedBox(width: 6),
             Text(
               label,
-              style: TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w600,
-                color: isSelected ? Colors.white : AppColors.grayscale.s600,
+              style: AppTextStyles.caption1_2.copyWith(
+                color: isSelected ? AppColors.grayscale.s30 : AppColors.grayscale.s600,
               ),
             ),
           ],

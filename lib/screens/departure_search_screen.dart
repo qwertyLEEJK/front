@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:midas_project/theme/app_theme.dart';
 
 class DepartureSearchScreen extends StatelessWidget {
   const DepartureSearchScreen({super.key});
@@ -22,9 +23,9 @@ class DepartureSearchScreen extends StatelessWidget {
             child: Container(
               color: Colors.grey[300],
               alignment: Alignment.center,
-              child: const Text(
+              child: Text(
                 '도착지 검색 히스토리',
-                style: TextStyle(fontSize: 18),
+                style: AppTextStyles.title6,
               ),
             ),
           )

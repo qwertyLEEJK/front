@@ -18,8 +18,14 @@ Future<void> main() async {
   // ✅ .env 파일 로드
   await dotenv.load(fileName: ".env");
 
-  // ✅ Kakao SDK 초기화
-  KakaoSdk.init(nativeAppKey: 'd3d5da14ab19ade1029f19a41f04e173');
+
+  // ✅ Kakao SDK 초기화 (.env에서 읽어오기)
+  final kakaoNativeAppKey = dotenv.env['KAKAO_NATIVE_APP_KEY'];
+  if (kakaoNativeAppKey == null || kakaoNativeAppKey.isEmpty) {
+    debugPrint("❌ KAKAO_NATIVE_APP_KEY 누락됨 — .env 파일을 확인하세요.");
+  } else {
+    KakaoSdk.init(nativeAppKey: kakaoNativeAppKey);
+  }
 
   // ✅ NaverMap SDK 초기화 (.env에서 읽어오기)
   final naverClientId = dotenv.env['NAVER_MAPS_API_KEY'];

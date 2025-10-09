@@ -10,6 +10,7 @@ import '../function/prediction_service.dart';
 import '../function/location_info.dart';
 import 'place_info.dart';
 import 'package:midas_project/theme/app_colors.dart';
+import 'package:midas_project/theme/app_theme.dart';
 import 'package:flutter/gestures.dart';
 import 'package:midas_project/function/sensor_controller.dart';
 
@@ -401,12 +402,12 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
                               ? Colors.orange
                               : (n.type == "marker" ? Colors.blue : Colors.red),
                           shape: BoxShape.circle,
-                          border: Border.all(color: Colors.white, width: 1),
+                          border: Border.all(color: AppColors.grayscale.s30, width: 1),
                         ),
                         child: Center(
                           child: Text(
                             "${n.id}",
-                            style: const TextStyle(fontSize: 8, color: Colors.white),
+                            style: AppTextStyles.caption2_1.copyWith(color: AppColors.grayscale.s30, fontSize: 8),
                           ),
                         ),
                       ),
