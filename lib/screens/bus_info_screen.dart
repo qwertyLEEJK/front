@@ -2,6 +2,7 @@ import 'dart:convert';
 // import 'package:get/get.dart';
 import 'package:http/http.dart' as http;
 import 'package:flutter/material.dart';
+import 'package:midas_project/theme/app_theme.dart';
 
 
 
@@ -109,9 +110,8 @@ class _BusInfoScreenState extends State<BusInfoScreen> {
             return ListView(
               padding: const EdgeInsets.all(16),
               children: [
-                const Text('영남대 앞',
-                    style:
-                        TextStyle(fontSize: 24, fontWeight: FontWeight.bold)),
+        Text('영남대 앞',
+          style: AppTextStyles.title5),
                 const Divider(thickness: 1),
                 const SizedBox(height: 12),
                 ...busList.map(_busRow),
@@ -144,13 +144,13 @@ class _BusInfoScreenState extends State<BusInfoScreen> {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('${routeInfo.routeNo}  임당삼성 앞 방면',
-                    style: const TextStyle(fontWeight: FontWeight.bold)),
-                Text('기점 ↔ 종점', style: const TextStyle(color: Colors.grey)),
+        Text('${routeInfo.routeNo}  임당삼성 앞 방면',
+          style: AppTextStyles.body1_3),
+                Text('기점 ↔ 종점', style: AppTextStyles.body2_1.copyWith(color: Colors.grey)),
                 const SizedBox(height: 4),
-                Text(times,
-                    style: TextStyle(
-                        color: isEnded ? Colors.grey : Colors.red)),
+        Text(times,
+          style: AppTextStyles.body2_1.copyWith(
+            color: isEnded ? Colors.grey : Colors.red)),
               ],
             ),
           )

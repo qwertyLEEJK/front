@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:midas_project/theme/app_colors.dart';
 
 class CircleLoginButton extends StatelessWidget {
   final String asset;
@@ -8,7 +9,7 @@ class CircleLoginButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return CircleAvatar(
       radius: 28,
-      backgroundColor: Colors.white,
+  backgroundColor: AppColors.grayscale.s30,
       child: Image.asset(asset, width: 32, height: 32),
     );
   }
