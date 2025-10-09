@@ -64,17 +64,10 @@ class _OutdoorMapScreenState extends State<OutdoorMapScreen> {
     }
   }
 
-  void _onMapReady(NaverMapController controller) {
+  void _onMapReady(NaverMapController controller) async {
     if (_mapInitialized) return;
-    _mapInitialized = true;
     _controller = controller;
-
-    // 비동기 작업을 별도로 처리
-    _moveToCurrentLocation();
-  }
-
-  Future<void> _moveToCurrentLocation() async {
-    if (_controller == null) return;
+    _mapInitialized = true;
 
     try {
       final pos = await _getCurrentPosition();

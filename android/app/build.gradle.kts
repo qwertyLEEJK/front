@@ -43,13 +43,11 @@ android {
 
     defaultConfig {
         applicationId = "com.example.midas_project"
-        minSdk = 23
+        minSdk = flutter.minSdkVersion
         targetSdk = flutter.targetSdkVersion
         versionCode = flutter.versionCode
         versionName = flutter.versionName
-        // ✅ manifestPlaceholders에 네이버 맵 API 키 추가
         manifestPlaceholders["kakao_native_app_key"] = "d3d5da14ab19ade1029f19a41f04e173"
-        manifestPlaceholders["NAVER_MAPS_API_KEY"] = naverMapsApiKey
     }
 
     buildTypes {
