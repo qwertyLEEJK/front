@@ -6,7 +6,7 @@ import 'package:midas_project/function/location_service.dart';
 
 class SlideUpCard extends StatefulWidget {
   final VoidCallback onClose;
-  final int? markerId;
+  final String? markerId;
 
   const SlideUpCard({
     super.key,
@@ -24,35 +24,32 @@ class _SlideUpCardState extends State<SlideUpCard> {
   @override
   void initState() {
     super.initState();
-    // LocationService 인스턴스 가져오기 (없으면 생성)
-    _locationService = Get.find<LocationService>();
+    // LocationService 인스턴스 확보
+    try {
+      _locationService = Get.find<LocationService>();
+    } catch (_) {
+      _locationService = Get.put(LocationService());
+    }
 
-    // markerId가 있으면 해당 위치 정보 로드
-    if (widget.markerId != null) {
-      _locationService.setMarkerId(widget.markerId);
+    // ⚠️ 필드는 if ( != null )로 승격이 안 됨 → 로컬 변수로 받아서 체크
+    final mid = widget.markerId;
+    if (mid != null && mid.isNotEmpty) {
+      _locationService.setMarkerId(mid);
     }
   }
 
   @override
   Widget build(BuildContext context) {
-    // MediaQuery를 통해 안전 영역과 네비게이션 바 높이를 정확히 계산
-    final MediaQueryData mediaQuery = MediaQuery.of(context);
-    final double bottomPadding = mediaQuery.padding.bottom; // 안전 영역
-    final double bottomInset = mediaQuery.viewInsets.bottom; // 키보드 등
-
-    // 네비게이션 바가 있다면 추가 여백 (일반적으로 56-80px)
-    final double navigationBarHeight = 58.0; // 앱의 네비게이션 바 높이에 맞게 조정
-
-    // 총 하단 여백 계산
-    final double totalBottomGap =
-        bottomPadding + navigationBarHeight + bottomInset;
+    final mediaQuery = MediaQuery.of(context);
+    final double bottomPadding = mediaQuery.padding.bottom;
+    final double bottomInset = mediaQuery.viewInsets.bottom;
+    final double navigationBarHeight = 58.0;
+    final double totalBottomGap = bottomPadding + navigationBarHeight + bottomInset;
 
     return Align(
       alignment: Alignment.bottomCenter,
       child: Container(
-        margin: EdgeInsets.only(
-          bottom: totalBottomGap,
-        ),
+        margin: EdgeInsets.only(bottom: totalBottomGap),
         height: 227,
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
@@ -61,7 +58,6 @@ class _SlideUpCardState extends State<SlideUpCard> {
           border: Border(
             top: BorderSide(color: AppColors.grayscale.s100, width: 1),
           ),
-          // 그림자 추가로 더 자연스럽게
           boxShadow: [
             BoxShadow(
               color: Colors.black.withOpacity(0.1),
@@ -74,13 +70,11 @@ class _SlideUpCardState extends State<SlideUpCard> {
           final isLoading = _locationService.loading.value;
           final location = _locationService.location.value;
           final error = _locationService.error.value;
-          
+
           if (isLoading) {
-            return const Center(
-              child: CircularProgressIndicator(),
-            );
+            return const Center(child: CircularProgressIndicator());
           }
-          
+
           if (error != null) {
             return Column(
               crossAxisAlignment: CrossAxisAlignment.start,
@@ -89,15 +83,13 @@ class _SlideUpCardState extends State<SlideUpCard> {
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
                     Text("오류 발생", style: AppTextStyles.title6),
-                    Image.asset('assets/images/fill_star.png',
-                        width: 24, height: 24),
+                    Image.asset('assets/images/fill_star.png', width: 24, height: 24),
                   ],
                 ),
                 const SizedBox(height: 10),
                 Text(
                   error,
-                  style: AppTextStyles.body2_1
-                      .copyWith(color: AppColors.grayscale.s600),
+                  style: AppTextStyles.body2_1.copyWith(color: AppColors.grayscale.s600),
                 ),
                 const Spacer(),
                 Center(
@@ -109,13 +101,13 @@ class _SlideUpCardState extends State<SlideUpCard> {
               ],
             );
           }
-          
-          // 위치 정보가 없을 때 기본값 표시
+
+          // 위치 정보 fallback
           final locationName = location?.locationName ?? "위치 정보 없음";
           final description = location?.description ?? "위치 설명이 없습니다.";
           final floor = location?.floor ?? 0;
           final address = location?.address ?? "주소 정보 없음";
-          final markerId = widget.markerId ?? 0;
+          final markerIdLabel = widget.markerId ?? "-"; // ✅ 문자열 기본값으로 통일
 
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -133,19 +125,19 @@ class _SlideUpCardState extends State<SlideUpCard> {
                           style: AppTextStyles.title6,
                           overflow: TextOverflow.ellipsis,
                         ),
-                        if (floor > 0)
-                          Text(
-                            "$floor층 | ID: $markerId",
-                            style: AppTextStyles.body2_1.copyWith(
-                              color: AppColors.grayscale.s500,
-                              fontSize: 12,
-                            ),
+                        Text(
+                          (floor > 0) ? "$floor층 | ID: $markerIdLabel" : "ID: $markerIdLabel",
+                          style: AppTextStyles.body2_1.copyWith(
+                            color: AppColors.grayscale.s500,
+                            fontSize: 12,
                           ),
+                          overflow: TextOverflow.ellipsis,
+                        ),
                       ],
                     ),
                   ),
-                  Image.asset('lib/assets/images/fill_star.png',
-                      width: 24, height: 24),
+                  // 경로 통일 (위쪽과 동일 경로 사용)
+                  Image.asset('assets/images/fill_star.png', width: 24, height: 24),
                 ],
               ),
               const SizedBox(height: 8),
@@ -169,7 +161,7 @@ class _SlideUpCardState extends State<SlideUpCard> {
                         height: 44,
                         child: ElevatedButton(
                           onPressed: () {
-                            // 출발 버튼 로직 구현
+                            // TODO: 출발 로직
                           },
                           style: ElevatedButton.styleFrom(
                             elevation: 0,
@@ -181,8 +173,7 @@ class _SlideUpCardState extends State<SlideUpCard> {
                           ),
                           child: Text(
                             "출발",
-                            style: AppTextStyles.body1_3
-                                .copyWith(color: AppColors.grayscale.s30),
+                            style: AppTextStyles.body1_3.copyWith(color: AppColors.grayscale.s30),
                           ),
                         ),
                       ),
@@ -193,7 +184,7 @@ class _SlideUpCardState extends State<SlideUpCard> {
                         height: 44,
                         child: ElevatedButton(
                           onPressed: () {
-                            // 도착 버튼 로직 구현
+                            // TODO: 도착 로직
                           },
                           style: ElevatedButton.styleFrom(
                             elevation: 0,
@@ -205,8 +196,7 @@ class _SlideUpCardState extends State<SlideUpCard> {
                           ),
                           child: Text(
                             "도착",
-                            style: AppTextStyles.body1_3
-                                .copyWith(color: AppColors.primary.s500),
+                            style: AppTextStyles.body1_3.copyWith(color: AppColors.primary.s500),
                           ),
                         ),
                       ),

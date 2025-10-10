@@ -103,7 +103,7 @@ class IndoorMapScreen extends StatefulWidget {
 }
 
 class _IndoorMapScreenState extends State<IndoorMapScreen> {
-  int? selectedPredictionIndex;
+  String? selectedPredictionIndex;
   Timer? _pollTimer;
 
   double _headingDeg = 0.0;
@@ -142,15 +142,7 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
 
   Future<void> _initializeAsync() async {
     try {
-      // SensorController 가져오기 (없으면 생성)
-      try {
-        _sensor = Get.find<SensorController>();
-      } catch (e) {
-        debugPrint('SensorController not found, creating new instance');
-        _sensor = Get.put(SensorController());
-      }
-
-      // 그래프 로드
+      _sensor = Get.put(SensorController(), permanent: true);
       final g = await loadGraphFromCsv();
       if (!mounted) return;
 
@@ -161,7 +153,6 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
 
       _calibrateScaleAndOrigin();
 
-      // Compass 구독
       _compassSub = FlutterCompass.events?.listen((event) {
         final d = event.heading;
         if (d != null && mounted) {
@@ -169,24 +160,21 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
         }
       });
 
-      // 타이머 시작 (약간의 지연 후)
       await Future.delayed(const Duration(milliseconds: 500));
       if (!mounted) return;
 
       _pollTimer = Timer.periodic(
         const Duration(seconds: 2),
-        (_) => fetchPredictionAndUpdateAnchor(),
+            (_) => fetchPredictionAndUpdateAnchor(),
       );
 
       _uiTicker = Timer.periodic(
         const Duration(milliseconds: 66),
-        (_) => _updateFusedPosition(),
+            (_) => _updateFusedPosition(),
       );
 
-      // 초기 예측
       fetchPredictionAndUpdateAnchor();
 
-      // 카메라 초기화
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (mounted) {
           _tfm.value = Matrix4.identity()
@@ -211,7 +199,8 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
     super.dispose();
   }
 
-  Future<void> _openPlaceSheet({int? markerId}) async {
+  // 🔧 markerId 타입 변경 (int? → String?)
+  Future<void> _openPlaceSheet({String? markerId}) async {
     if (widget.onRequestCollapsePanel != null) {
       await widget.onRequestCollapsePanel!.call();
     }
@@ -232,18 +221,16 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
 
   Future<void> fetchPredictionAndUpdateAnchor() async {
     if (_sensor == null || _graph == null) return;
-
     try {
       final request = _sensor!.getCurrentSensorValues();
       final result = await PredictApi.fetchPrediction(request);
-
       if (result != null && mounted) {
         setState(() {
-          selectedPredictionIndex = result.num;
+          selectedPredictionIndex = result.num.toString(); // 문자열 변환
           _topK = result.topKRaw;
         });
 
-        final node = _graph!.getNode(result.num);
+        final node = _graph!.getNode(result.num.toString()); // 문자열 변환
         final newAnchor = _meterToPx(node.x, node.y);
 
         const double thresholdM = 3.0;
@@ -252,11 +239,9 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
         final currentPos = _fusedPx ?? _anchorServerPx;
         if (currentPos != null) {
           final distPx = (newAnchor - currentPos).distance;
-          if (distPx > thresholdPx) {
-            _anchorServerPx = Offset.lerp(currentPos, newAnchor, 0.2);
-          } else {
-            _anchorServerPx = newAnchor;
-          }
+          _anchorServerPx = distPx > thresholdPx
+              ? Offset.lerp(currentPos, newAnchor, 0.2)
+              : newAnchor;
         } else {
           _anchorServerPx = newAnchor;
         }
@@ -272,9 +257,7 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
 
   Offset _meterToPx(double xM, double yM) {
     double y = yM;
-    if (_flipY) {
-      y = _minY + (_maxY - yM);
-    }
+    if (_flipY) y = _minY + (_maxY - yM);
     return _originPx + Offset(xM * _pxPerMeter, y * _pxPerMeter);
   }
 
@@ -285,39 +268,29 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
 
   void _updateFusedPosition() {
     if (!mounted || _anchorServerPx == null || _sensor == null) return;
-
     try {
       final st = _sensor!.pdr.getState();
       final dxM = (st['posX'] as num).toDouble() - _anchorPdrX;
       final dyM = (st['posY'] as num).toDouble() - _anchorPdrY;
 
       final rotated = _rotate(Offset(dxM, dyM), 0);
-      final dxPx = rotated.dx * _pxPerMeter;
-      final dyPx = -rotated.dy * _pxPerMeter;
-
-      final fused = _anchorServerPx! + Offset(dxPx, dyPx);
-      
-      if (mounted) {
-        setState(() {
-          _fusedPx = fused;
-        });
-      }
+      final fused = _anchorServerPx! + Offset(rotated.dx * _pxPerMeter, -rotated.dy * _pxPerMeter);
+      setState(() => _fusedPx = fused);
     } catch (e) {
       debugPrint('Position update 오류: $e');
     }
   }
 
   void _calibrateScaleAndOrigin() {
-    if (_graph == null || _graph!.nodes.isEmpty) return;
-    if (_calibrated) return;
+    if (_graph == null || _graph!.nodes.isEmpty || _calibrated) return;
 
     double minX = double.infinity, minY = double.infinity;
     double maxX = -double.infinity, maxY = -double.infinity;
     for (final n in _graph!.nodes) {
-      if (n.x < minX) minX = n.x;
-      if (n.y < minY) minY = n.y;
-      if (n.x > maxX) maxX = n.x;
-      if (n.y > maxY) maxY = n.y;
+      minX = math.min(minX, n.x);
+      minY = math.min(minY, n.y);
+      maxX = math.max(maxX, n.x);
+      maxY = math.max(maxY, n.y);
     }
     _minX = minX; _minY = minY; _maxX = maxX; _maxY = maxY;
 
@@ -328,33 +301,21 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
     const padPx = 24.0;
     final availW = kImageW - padPx * 2;
     final availH = kImageH - padPx * 2;
-    final scaleX = availW / wM;
-    final scaleY = availH / hM;
-    _pxPerMeter = math.min(scaleX, scaleY);
+    _pxPerMeter = math.min(availW / wM, availH / hM);
 
     _originPx = Offset(
       padPx - minX * _pxPerMeter,
       padPx - (_flipY ? (minY + (maxY - minY)) : minY) * _pxPerMeter,
     );
-
     _calibrated = true;
   }
 
   @override
   Widget build(BuildContext context) {
-    if (_isLoading) {
-      return const Center(
-        child: CircularProgressIndicator(),
-      );
-    }
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
 
     final scrollBehavior = const MaterialScrollBehavior().copyWith(
-      dragDevices: {
-        PointerDeviceKind.touch,
-        PointerDeviceKind.mouse,
-        PointerDeviceKind.stylus,
-        PointerDeviceKind.unknown,
-      },
+      dragDevices: {PointerDeviceKind.touch, PointerDeviceKind.mouse, PointerDeviceKind.stylus, PointerDeviceKind.unknown},
     );
 
     return ScrollConfiguration(
@@ -375,15 +336,8 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
             children: [
               Positioned(
                 left: _bgOffset.dx,
-                top:  _bgOffset.dy,
-                child: SizedBox(
-                  width: kImageW,
-                  height: kImageH,
-                  child: Image.asset(
-                    'assets/3map.png',
-                    fit: BoxFit.fill,
-                  ),
-                ),
+                top: _bgOffset.dy,
+                child: Image.asset('assets/3map.png', width: kImageW, height: kImageH, fit: BoxFit.fill),
               ),
               if (_graph != null)
                 ..._graph!.nodes.map((n) {
@@ -391,9 +345,9 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
                   final isCurrent = (selectedPredictionIndex != null && n.id == selectedPredictionIndex);
                   return Positioned(
                     left: posPx.dx - 10,
-                    top:  posPx.dy - 10,
+                    top: posPx.dy - 10,
                     child: GestureDetector(
-                      onTap: () => _openPlaceSheet(markerId: n.id),
+                      onTap: () => _openPlaceSheet(markerId: n.id), // 🔧 n.id는 String
                       child: Container(
                         width: 20,
                         height: 20,
@@ -406,7 +360,7 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
                         ),
                         child: Center(
                           child: Text(
-                            "${n.id}",
+                            n.id, // 🔧 문자열 표시
                             style: AppTextStyles.caption2_1.copyWith(color: AppColors.grayscale.s30, fontSize: 8),
                           ),
                         ),
@@ -417,11 +371,8 @@ class _IndoorMapScreenState extends State<IndoorMapScreen> {
               if (_fusedPx != null)
                 Positioned(
                   left: (_fusedPx! + _overlayOffset).dx - 28,
-                  top:  (_fusedPx! + _overlayOffset).dy - 28,
-                  child: NaverCurrentLocationMarker(
-                    radius: 28,
-                    headingDeg: _headingDeg,
-                  ),
+                  top: (_fusedPx! + _overlayOffset).dy - 28,
+                  child: NaverCurrentLocationMarker(radius: 28, headingDeg: _headingDeg),
                 ),
             ],
           ),
