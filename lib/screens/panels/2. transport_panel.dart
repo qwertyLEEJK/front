@@ -1,7 +1,10 @@
 // lib/screens/2. transport_panel.dart
 import 'dart:convert';
 import 'package:flutter/material.dart';
+
 import 'package:http/http.dart' as http;
+import '../../theme/app_colors.dart';
+import '../../theme/app_theme.dart';
 
 /// ===========================
 /// 모델
@@ -104,7 +107,11 @@ class _TransitPanelState extends State<TransitPanel> {
 
   @override
   Widget build(BuildContext context) {
-    final divider = Divider(height: 1, thickness: 0.7, color: Colors.grey.shade300);
+    final divider = Divider(
+      height: 1,
+      thickness: 0.7,
+      color: AppColors.grayscale.s300,
+    );
 
     return RefreshIndicator(
       onRefresh: _refresh,
@@ -115,10 +122,10 @@ class _TransitPanelState extends State<TransitPanel> {
             return ListView(
               controller: widget.controller,
               physics: const AlwaysScrollableScrollPhysics(),
-              children: const [
-                SizedBox(height: 200),
-                Center(child: CircularProgressIndicator()),
-                SizedBox(height: 200),
+              children: [
+                const SizedBox(height: 200),
+                Center(child: CircularProgressIndicator(color: AppColors.primary.s500)),
+                const SizedBox(height: 200),
               ],
             );
           }
@@ -129,17 +136,35 @@ class _TransitPanelState extends State<TransitPanel> {
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
               children: [
-                const Icon(Icons.error_outline, size: 40, color: Colors.redAccent),
+                Icon(Icons.error_outline, size: 40, color: AppColors.secondary.s700),
                 const SizedBox(height: 12),
-                const Text('대중교통 정보를 불러오지 못했습니다.',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                Text(
+                  '대중교통 정보를 불러오지 못했습니다.',
+                  style: AppTextStyles.body1_3.copyWith(
+                    color: AppColors.grayscale.s900,
+                  ),
+                ),
                 const SizedBox(height: 8),
-                Text('${snapshot.error}', style: const TextStyle(color: Colors.grey)),
+                Text(
+                  '${snapshot.error}',
+                  style: AppTextStyles.body1_1.copyWith(
+                    color: AppColors.grayscale.s600,
+                  ),
+                ),
                 const SizedBox(height: 12),
                 FilledButton.icon(
                   onPressed: _refresh,
-                  icon: const Icon(Icons.refresh),
-                  label: const Text('다시 시도'),
+                  icon: Icon(Icons.refresh, color: AppColors.primary.s500),
+                  label: Text(
+                    '다시 시도',
+                    style: AppTextStyles.body1_2.copyWith(
+                      color: AppColors.primary.s900,
+                    ),
+                  ),
+                  style: FilledButton.styleFrom(
+                    backgroundColor: AppColors.primary.s100,
+                    foregroundColor: AppColors.primary.s900,
+                  ),
                 ),
               ],
             );
@@ -151,13 +176,22 @@ class _TransitPanelState extends State<TransitPanel> {
               controller: widget.controller,
               physics: const AlwaysScrollableScrollPhysics(),
               padding: const EdgeInsets.symmetric(vertical: 24, horizontal: 16),
-              children: const [
-                Icon(Icons.directions_bus, size: 40, color: Colors.grey),
-                SizedBox(height: 12),
-                Text('도착 정보가 없습니다.',
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
-                SizedBox(height: 4),
-                Text('잠시 후 다시 확인해 주세요.', style: TextStyle(color: Colors.grey)),
+              children: [
+                Icon(Icons.directions_bus, size: 40, color: AppColors.grayscale.s500),
+                const SizedBox(height: 12),
+                Text(
+                  '도착 정보가 없습니다.',
+                  style: AppTextStyles.body1_3.copyWith(
+                    color: AppColors.grayscale.s900,
+                  ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  '잠시 후 다시 확인해 주세요.',
+                  style: AppTextStyles.body1_1.copyWith(
+                    color: AppColors.grayscale.s600,
+                  ),
+                ),
               ],
             );
           }
@@ -168,11 +202,13 @@ class _TransitPanelState extends State<TransitPanel> {
             padding: const EdgeInsets.symmetric(vertical: 8),
             children: [
               // 헤더
-              const Padding(
-                padding: EdgeInsets.fromLTRB(16, 8, 16, 6),
+              Padding(
+                padding: const EdgeInsets.fromLTRB(16, 8, 16, 6),
                 child: Text(
                   '영남대 앞',
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                  style: AppTextStyles.title6.copyWith(
+                    color: AppColors.grayscale.s900,
+                  ),
                 ),
               ),
               divider,
@@ -215,20 +251,25 @@ class _TransitPanelState extends State<TransitPanel> {
     }
 
     // 아이콘 컬러: 직행(직*) 빨강, 그 외 파랑
-    final Color iconColor =
-        routeInfo.routeNo.startsWith('직') ? Colors.red : Colors.blue;
+  final Color iconColor = routeInfo.routeNo.startsWith('직')
+    ? AppColors.secondary.s700
+    : AppColors.primary.s700;
 
     return ListTile(
       leading: Icon(Icons.directions_bus, color: iconColor),
       title: Text(
         routeInfo.routeNo,
-        style: const TextStyle(fontWeight: FontWeight.bold),
+        style: AppTextStyles.body1_3.copyWith(
+          color: AppColors.grayscale.s900,
+        ),
       ),
       subtitle: Padding(
         padding: const EdgeInsets.only(top: 4),
         child: Text(
           times,
-          style: TextStyle(color: isEnded ? Colors.grey : Colors.red),
+          style: AppTextStyles.body1_1.copyWith(
+            color: isEnded ? AppColors.grayscale.s600 : AppColors.secondary.s700,
+          ),
         ),
       ),
       contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),

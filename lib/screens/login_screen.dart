@@ -228,17 +228,17 @@ class _LoginScreenState extends State<LoginScreen> {
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: _isLoading
-                          ? const SizedBox(
+                          ? SizedBox(
                               width: 20,
                               height: 20,
                               child: CircularProgressIndicator(
-                                  strokeWidth: 2, color: Colors.white),
+                                  strokeWidth: 2, color: AppColors.grayscale.s30),
                             )
                           : Text(
                               '로그인',
                               textAlign: TextAlign.center,
                               style: AppTextStyles.title7
-                                  .copyWith(color: Colors.white, height: 1.0),
+                                  .copyWith(color: AppColors.grayscale.s30, height: 1.0),
                             ),
                     ),
                   ),
@@ -258,17 +258,17 @@ class _LoginScreenState extends State<LoginScreen> {
                       borderRadius: BorderRadius.circular(10),
                     ),
                     child: _isLoading
-                        ? const SizedBox(
+                        ? SizedBox(
                             width: 20,
                             height: 20,
                             child: CircularProgressIndicator(
-                                strokeWidth: 2, color: Colors.white),
+                                strokeWidth: 2, color: AppColors.grayscale.s30),
                           )
                         : Text(
                             '디버그 모드',
                             textAlign: TextAlign.center,
                             style: AppTextStyles.title7
-                                .copyWith(color: Colors.white, height: 1.0),
+                                .copyWith(color: AppColors.grayscale.s30, height: 1.0),
                           ),
                   ),
                 ),
@@ -280,7 +280,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _SocialCircleButton(
-                      backgroundColor: const Color(0xFFFEE500),
+                      backgroundColor: AppColors.secondary.s100,
                       onTap: () {}, // TODO: 카카오
                       child: Image.asset('lib/카카오톡.png', width: 40, height: 40),
                     ),

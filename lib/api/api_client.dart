@@ -35,6 +35,12 @@ class ApiClient {
     return http.post(url, headers: headers, body: json.encode(body));
   }
 
+  Future<http.Response> put(String path, {dynamic body}) async {
+    final headers = await _getHeaders();
+    final url = Uri.parse('$_baseUrl$path');
+    return http.put(url, headers: headers, body: json.encode(body));
+  }
+
   Future<http.Response> delete(String path) async {
     final headers = await _getHeaders();
     final url = Uri.parse('$_baseUrl$path');

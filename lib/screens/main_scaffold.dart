@@ -2,6 +2,7 @@ import 'dart:async'; // 🔸 Completer / nextFrame 용
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:midas_project/theme/app_colors.dart';
+import 'package:midas_project/theme/app_theme.dart';
 import '../widgets/custom_bottom_nav_bar.dart';
 import '../widgets/custom_search_bar.dart';
 
@@ -286,11 +287,11 @@ class _PeekablePanel extends StatelessWidget {
             alignment: Alignment.bottomCenter,
             child: Container(
               decoration: BoxDecoration(
-                color: Colors.white,
+                color: AppColors.grayscale.s30,
                 borderRadius: const BorderRadius.vertical(top: Radius.circular(16)),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.06),
+                    color: AppColors.grayscale.s900.withOpacity(0.06),
                     blurRadius: 10,
                     offset: const Offset(0, -3),
                   ),
@@ -308,14 +309,14 @@ class _PeekablePanel extends StatelessWidget {
                           Container(
                             width: 44, height: 4,
                             decoration: BoxDecoration(
-                              color: Colors.black12,
+                              color: AppColors.grayscale.s900,
                               borderRadius: BorderRadius.circular(2),
                             ),
                           ),
                           const SizedBox(height: 6),
                           Text(
                             title,
-                            style: const TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
+                            style: AppTextStyles.title6.copyWith(color: AppColors.grayscale.s900),
                           ),
                         ],
                       ),
