@@ -1,4 +1,3 @@
-// lib/screens/1. home_screen.dart
 import 'package:flutter/material.dart';
 import 'package:flutter/foundation.dart';
 import 'package:midas_project/theme/app_colors.dart';
@@ -21,14 +20,14 @@ class HomeScreen extends StatefulWidget {
 }
 
 class _HomeScreenState extends State<HomeScreen> {
-  bool _isIndoorMode = false; // default: 실외 지도
+  bool _isIndoorMode = false; // false = 실외, true = 실내
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       body: Stack(
         children: [
-          // 지도 표시 영역
+          // 지도 표시
           if (_isIndoorMode)
             SafeArea(
               child: IndoorMapScreen(
@@ -39,9 +38,9 @@ class _HomeScreenState extends State<HomeScreen> {
           else
             const OutdoorMapScreen(),
 
-          // 실내/실외 전환 버튼
+          // 상단 실내/실외 전환 버튼
           Positioned(
-            top: 80, // 👈 검색창 아래로 내림 (기존 16 → 80)
+            top: 80,
             right: 16,
             child: SafeArea(
               child: Material(
@@ -60,26 +59,43 @@ class _HomeScreenState extends State<HomeScreen> {
                         label: '실외',
                         icon: Icons.map,
                         isSelected: !_isIndoorMode,
-                        onTap: () {
-                          debugPrint('실외 버튼 클릭');
-                          setState(() => _isIndoorMode = false);
-                        },
+                        onTap: () => setState(() => _isIndoorMode = false),
                       ),
-                      Container(
-                        width: 1,
-                        height: 32,
-                        color: AppColors.grayscale.s200,
-                      ),
+                      Container(width: 1, height: 32, color: AppColors.grayscale.s200),
                       _MapToggleButton(
                         label: '실내',
                         icon: Icons.store,
                         isSelected: _isIndoorMode,
-                        onTap: () {
-                          debugPrint('실내 버튼 클릭');
-                          setState(() => _isIndoorMode = true);
-                        },
+                        onTap: () => setState(() => _isIndoorMode = true),
                       ),
                     ],
+                  ),
+                ),
+              ),
+            ),
+          ),
+
+          // 하단 현재 위치로 이동 버튼
+          Positioned(
+            bottom: 48,
+            right: 16,
+            child: SafeArea(
+              child: Material(
+                elevation: 4,
+                shape: const CircleBorder(),
+                color: AppColors.grayscale.s30,
+                child: InkWell(
+                  customBorder: const CircleBorder(),
+                  onTap: () {
+                    if (_isIndoorMode) {
+                      IndoorMapScreenStateHolder.state?.centerToCurrentPosition();
+                    } else {
+                      OutdoorMapScreenStateHolder.state?.moveToCurrentLocation();
+                    }
+                  },
+                  child: const Padding(
+                    padding: EdgeInsets.all(12),
+                    child: Icon(Icons.my_location, color: Colors.black87),
                   ),
                 ),
               ),
@@ -91,6 +107,9 @@ class _HomeScreenState extends State<HomeScreen> {
   }
 }
 
+// ----------------------------
+// 실내/실외 전환 버튼 위젯
+// ----------------------------
 class _MapToggleButton extends StatelessWidget {
   final String label;
   final IconData icon;
@@ -118,16 +137,18 @@ class _MapToggleButton extends StatelessWidget {
         child: Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(
-              icon,
-              size: 20,
-              color: isSelected ? AppColors.grayscale.s30 : AppColors.grayscale.s600,
-            ),
+            Icon(icon,
+                size: 20,
+                color: isSelected
+                    ? AppColors.grayscale.s30
+                    : AppColors.grayscale.s600),
             const SizedBox(width: 6),
             Text(
               label,
               style: AppTextStyles.caption1_2.copyWith(
-                color: isSelected ? AppColors.grayscale.s30 : AppColors.grayscale.s600,
+                color: isSelected
+                    ? AppColors.grayscale.s30
+                    : AppColors.grayscale.s600,
               ),
             ),
           ],
